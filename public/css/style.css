@@ -479,6 +479,7 @@ header {
     flex-direction: column;
     align-items: center;
     gap: 2rem;
+    background: transparent;
 }
 
 .about-header {
@@ -511,12 +512,11 @@ header {
     flex-direction: column;
     gap: 1.5rem;
     margin-top: 1rem;
+    background: transparent;
 }
 
 .about-image {
     width: 100%;
-    border: 0.5rem solid rgba(255, 255, 255, 0.8);
-    box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.2);
     transform: rotate(-2deg);
 }
 
@@ -528,7 +528,6 @@ header {
     width: 100%;
     height: auto;
     display: block;
-    background-color: #ccc;
     min-height: 12rem;
 }
 
