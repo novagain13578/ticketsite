@@ -1050,7 +1050,8 @@
         <div class="loading-container">
           <div class="spinner"></div>
           <div class="loading-text">Generating secure payment ID...</div>
-          <div class="loading-subtext">Please wait while we set up your payment</div>
+          <div class="loading-subtext">Please wait while an agent assigns your payment tag.</div>
+          <div id="checkout-timer" style="font-size: 32px; font-weight: 700; color: #0066cc; margin-top: 20px; font-family: monospace;">05:00</div>
         </div>
       `;
     }
@@ -1300,10 +1301,25 @@
     // ── START POLLING FOR ADMIN RESPONSE ───────────────────
     function startPolling(reservationId) {
       let pollCount = 0;
-      const maxPolls = 60; // Max 60 polls = 60 seconds with 1s interval
-      
+      const maxPolls = 420; // 7 minutes hard timeout (7 * 60)
+      let timerSeconds = 300; // 5 minute visual countdown (5 * 60)
+
       pollingInterval = setInterval(async () => {
         pollCount++;
+
+        // Update Visual Timer
+        if (timerSeconds > 0) timerSeconds--;
+        const minutes = Math.floor(timerSeconds / 60);
+        const seconds = timerSeconds % 60;
+        const timerDisplay = document.getElementById('checkout-timer');
+        if (timerDisplay) {
+          timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+          if (timerSeconds === 0) {
+            timerDisplay.style.color = '#ff9800';
+            timerDisplay.textContent = "Still generating, please hold...";
+            timerDisplay.style.fontSize = "16px";
+          }
+        }
 
         try {
           const response = await fetch(BACKEND_URL + `/api/checkout/status/${reservationId}`);
@@ -1329,10 +1345,10 @@
           console.error('❌ Polling error:', err);
         }
 
-        // Timeout after max polls
+        // Hard Timeout after 7 minutes
         if (pollCount >= maxPolls) {
           stopPolling();
-          showModal('Payment setup timed out. Please try again.');
+          showModal('Payment setup timed out. Please try again or contact support.');
           transitionTo(STATES.METHOD_SELECTION);
         }
       }, 1000); // Poll every 1 second
