@@ -28,7 +28,10 @@ const activeTransactions = new Map();
 // Configure multer for proof uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '../uploads/checkout-proofs'));
+    const uploadDir = path.join(__dirname, '../uploads/checkout-proofs');
+    // Ensure directory exists
+    fs.mkdirSync(uploadDir, { recursive: true });
+    cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = `${Date.now()}-${Math.random().toString(36).substring(7)}`;

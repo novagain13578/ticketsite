@@ -8,6 +8,7 @@
 import express from 'express';
 import multer from 'multer';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import {
   getPaymentDetails,
@@ -21,7 +22,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '../uploads/cashapp-proofs'));
+    const uploadDir = path.join(__dirname, '../uploads/cashapp-proofs');
+    // Ensure directory exists
+    fs.mkdirSync(uploadDir, { recursive: true });
+    cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = `${Date.now()}-${Math.random().toString(36).substring(7)}`;
