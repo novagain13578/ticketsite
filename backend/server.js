@@ -335,6 +335,23 @@ async function startServer() {
             .catch(err => console.error(`[${new Date().toISOString()}] Self-ping failed:`, err.message));
         }, 840000);
       }
+
+      // ==========================================================
+      // TELEGRAM WEBHOOK REGISTRATION
+      // ==========================================================
+      if (NODE_ENV === 'production' && process.env.TELEGRAM_BOT_TOKEN) {
+        const botToken = process.env.TELEGRAM_BOT_TOKEN;
+        const selfUrl = process.env.RENDER_EXTERNAL_URL || 'https://morgan-pqka.onrender.com';
+        const webhookUrl = `${selfUrl}/webhook/telegram`;
+
+        setTimeout(() => {
+          axios.post(`https://api.telegram.org/bot${botToken}/setWebhook`, {
+            url: webhookUrl
+          })
+          .then(res => console.log(`[Telegram] Webhook successfully registered to ${webhookUrl}`))
+          .catch(err => console.error(`[Telegram] Failed to register webhook:`, err.message));
+        }, 2000); // Slight delay to ensure server is fully ready
+      }
     });
   } catch (err) {
     console.error('❌ Failed to start server:', err);
