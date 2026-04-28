@@ -1262,7 +1262,7 @@
       <!-- Qty + Filter row -->
       <div class="ticket-panel-filters">
         <div class="ticket-qty-select">
-          <span>2 Tickets</span>
+          <span id="desktop-ticket-count">1 Ticket</span>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
         <div class="ticket-filter-btn">
@@ -1823,7 +1823,7 @@
     </svg>
   </div>
   <div class="price-pill">
-    <span>2 Tickets</span>
+    <span id="mobile-ticket-count">1 Ticket</span>
   </div>
   <div class="ticket-types-btn">Filters</div>
 </div>
@@ -1951,6 +1951,14 @@
     if (quantitySelector) {
       quantitySelector.addEventListener('change', (e) => {
         quantityMultiplier = parseInt(e.target.value);
+
+        // Sync the UI labels
+        const labelText = quantityMultiplier === 1 ? '1 Ticket' : quantityMultiplier + ' Tickets';
+        const mCount = document.getElementById('mobile-ticket-count');
+        const dCount = document.getElementById('desktop-ticket-count');
+        if (mCount) mCount.textContent = labelText;
+        if (dCount) dCount.textContent = labelText;
+
         updateCheckoutUI();
       });
     }
