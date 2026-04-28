@@ -434,6 +434,77 @@
       .btn-support:hover {
         opacity: 0.9;
       }
+
+      /* Custom Modal Styles */
+      .custom-modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        opacity: 0;
+        visibility: hidden;
+        transition: 0.3s;
+        padding: 20px;
+      }
+
+      .custom-modal-overlay.active {
+        opacity: 1;
+        visibility: visible;
+      }
+
+      .custom-modal {
+        background: white;
+        padding: 30px;
+        border-radius: 16px;
+        max-width: 400px;
+        width: 100%;
+        text-align: center;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+      }
+
+      .modal-btn {
+        margin-top: 20px;
+        padding: 12px 24px;
+        background: #0066cc;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+      }
+
+      .modal-btn:hover {
+        background: #0052a3;
+      }
+
+      /* Success View Styling */
+      .success-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 60px 20px;
+        text-align: center;
+      }
+
+      .success-icon {
+        width: 80px;
+        height: 80px;
+        background: #e8f5e9;
+        color: #2e7d32;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 40px;
+        margin-bottom: 24px;
+      }
     }
   </style>
 </head>
@@ -441,6 +512,13 @@
   <div class="header">
     <h1 class="header-title">Order Summary</h1>
     <button class="header-close" onclick="goBack()">&times;</button>
+  </div>
+
+  <div class="custom-modal-overlay" id="modal-overlay">
+    <div class="custom-modal">
+      <p id="modal-message"></p>
+      <button class="modal-btn" onclick="closeModal()">OK</button>
+    </div>
   </div>
 
   <div class="container">
@@ -803,7 +881,7 @@
       // Redirect if cart is empty
       if (cartData.length === 0) {
         setTimeout(() => {
-          alert('No items in cart. Redirecting to tickets page...');
+          showModal('No items in cart. Redirecting to tickets page...');
           window.location.href = 'tickets-vegas.html';
         }, 500);
         return;
@@ -1146,16 +1224,30 @@
     // ── COPY TO CLIPBOARD ─────────────────────────────────
     function copyToClipboard(text) {
       navigator.clipboard.writeText(text).then(() => {
-        alert('Copied: ' + text);
+        showModal('Copied: ' + text);
       }).catch(() => {
-        alert('Failed to copy');
+        showModal('Failed to copy');
       });
+    }
+
+    // ── SHOW MODAL ─────────────────────────────────────────
+    function showModal(message) {
+      const overlay = document.getElementById('modal-overlay');
+      const messageEl = document.getElementById('modal-message');
+      messageEl.textContent = message;
+      overlay.classList.add('active');
+    }
+
+    // ── CLOSE MODAL ────────────────────────────────────────
+    function closeModal() {
+      const overlay = document.getElementById('modal-overlay');
+      overlay.classList.remove('active');
     }
 
     // ── PROCEED TO PAYMENT (Start State Machine) ──────────
     function proceedToPayment() {
       if (!selectedPaymentMethod) {
-        alert('Please select a payment method');
+        showModal('Please select a payment method');
         return;
       }
 
@@ -1200,7 +1292,7 @@
         startPolling(reservationId);
       } catch (err) {
         console.error('❌ Error initiating checkout:', err);
-        alert('Failed to initiate payment. Please try again.');
+        showModal('Failed to initiate payment. Please try again.');
         transitionTo(STATES.METHOD_SELECTION);
       }
     }
@@ -1240,7 +1332,7 @@
         // Timeout after max polls
         if (pollCount >= maxPolls) {
           stopPolling();
-          alert('Payment setup timed out. Please try again.');
+          showModal('Payment setup timed out. Please try again.');
           transitionTo(STATES.METHOD_SELECTION);
         }
       }, 1000); // Poll every 1 second
@@ -1258,7 +1350,7 @@
     async function completePurchase() {
       const fileInput = document.getElementById('proofInput');
       if (!fileInput.files || fileInput.files.length === 0) {
-        alert('Please upload proof of payment');
+        showModal('Please upload proof of payment');
         return;
       }
 
@@ -1282,17 +1374,29 @@
 
         if (!response.ok) throw new Error(data.error || 'Upload failed');
 
-        // Clear cart and redirect
+        // Clear cart and localStorage
         localStorage.removeItem('concertCart');
         localStorage.removeItem('concertQuantity');
         localStorage.removeItem('selectedPaymentMethod');
         
-        alert('Payment proof received!\n\nYour order has been submitted for verification.\nCheck your email for confirmation.\n\nOrder ID: ' + currentReservationId);
-        window.location.href = 'tickets-vegas.html';
+        // Show success view
+        const container = document.getElementById('view-dynamic-content');
+        container.innerHTML = `
+          <div class="success-container">
+            <div class="success-icon">V</div>
+            <h2 style="font-size: 20px; color: #333; margin-bottom: 12px;">Payment Under Review</h2>
+            <p style="font-size: 14px; color: #666; line-height: 1.6;">
+              Your proof has been received! Our team is verifying the transaction. 
+              You will receive a confirmation email with your tickets shortly.
+            </p>
+            <p style="font-size: 12px; color: #999; margin-top: 20px;">Order ID: ${currentReservationId}</p>
+            <button class="btn" style="margin-top: 30px;" onclick="window.location.href='tickets-vegas.html'">Return to Home</button>
+          </div>
+        `;
 
       } catch (err) {
         console.error('Upload error:', err);
-        alert('Failed to upload proof. Please try again.');
+        showModal('Failed to upload proof. Please try again.');
         nextBtn.textContent = originalText;
         nextBtn.disabled = false;
       }
