@@ -179,6 +179,78 @@ app.post('/api/notify', async (req, res) => {
   }
 });
 
+// ============================================================================
+// TELEGRAM WEBHOOK - CUSTOMER SUPPORT BRIDGE
+// ============================================================================
+
+/**
+ * POST /webhook/telegram
+ * Handles incoming Telegram messages from users requesting support
+ * Listens for /start command with support_ parameter
+ */
+app.post('/webhook/telegram', async (req, res) => {
+  try {
+    const message = req.body.message;
+    
+    if (!message || !message.text) {
+      return res.status(200).json({ ok: true });
+    }
+
+    // Check if message is /start support_<reservationId>
+    const supportMatch = message.text.match(/^\/start\s+support_(\S+)/);
+    
+    if (supportMatch) {
+      const reservationId = supportMatch[1];
+      const userId = message.from.id;
+      const userName = message.from.username || message.from.first_name || 'Unknown User';
+      const botToken = process.env.TELEGRAM_BOT_TOKEN;
+      const chatId = process.env.TELEGRAM_CHAT_ID;
+
+      if (!botToken || !chatId) {
+        console.log(`Support request from user ${userId} for reservation ${reservationId}`);
+        return res.status(200).json({ ok: true });
+      }
+
+      // Notify admin about the support request
+      const adminMessage = `Support Request\n\nUser: ${userName} (ID: ${userId})\nReservation ID: ${reservationId}\n\nUser is requesting assistance with this order.`;
+
+      try {
+        const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: adminMessage,
+          }),
+        });
+
+        const data = await response.json();
+        
+        if (response.ok) {
+          console.log(`Support request logged for reservation ${reservationId}`);
+          
+          // Send message to user acknowledging their support request
+          await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: userId,
+              text: `Thank you for contacting customer care.\n\nYour Order ID: ${reservationId}\n\nOur team will review your request and get back to you shortly.`,
+            }),
+          });
+        }
+      } catch (err) {
+        console.error('Error sending support notification:', err.message);
+      }
+    }
+
+    return res.status(200).json({ ok: true });
+  } catch (err) {
+    console.error('Error in Telegram webhook handler:', err.message);
+    return res.status(200).json({ ok: true });
+  }
+});
+
 // API Routes
 app.use('/api/cashapp', cashAppRoutes);
 app.use('/api/admin', adminRoutes);
