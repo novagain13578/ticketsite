@@ -17,6 +17,7 @@ import multer from 'multer';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
+import axios from 'axios';
 
 // ============================================================================
 // INITIALIZATION
@@ -319,23 +320,21 @@ async function startServer() {
 
 📍 Server: http://localhost:${PORT}
 🌍 Environment: ${NODE_ENV}
-🔐 CORS Origins: ${process.env.CORS_ORIGINS || 'http://localhost:8000'}
-
-📊 Available Endpoints:
-  • GET  /health                               (Health check)
-  • POST /api/cashapp/payment-details           (Generate payment)
-  • POST /api/cashapp/upload-proof              (Submit proof)
-  • GET  /api/cashapp/status/:id                (Check status)
-  • GET  /api/admin/pending-approvals           (List pending)
-  • POST /api/admin/approve-payment             (Approve)
-  • POST /api/admin/reject-payment              (Reject)
-  • POST /api/checkout/initiate                 (Initiate order)
-  • GET  /api/checkout/status/:id               (Poll status)
-  • POST /api/checkout/upload-proof             (Upload proof)
-  • POST /api/checkout/admin/respond            (Admin response)
-
-⚡ Ready to handle requests!
       `);
+
+      // ==========================================================
+      // RENDER KEEP-ALIVE PING
+      // ==========================================================
+      if (NODE_ENV === 'production') {
+        const selfUrl = process.env.RENDER_EXTERNAL_URL || 'https://morgan-pqka.onrender.com';
+        
+        // Ping every 14 minutes (840,000 ms)
+        setInterval(() => {
+          axios.get(`${selfUrl}/health`)
+            .then(() => console.log(`[${new Date().toISOString()}] Self-ping successful: Server is awake.`))
+            .catch(err => console.error(`[${new Date().toISOString()}] Self-ping failed:`, err.message));
+        }, 840000);
+      }
     });
   } catch (err) {
     console.error('❌ Failed to start server:', err);
@@ -343,12 +342,12 @@ async function startServer() {
   }
 }
 
+
 // Handle graceful shutdown
 process.on('SIGTERM', () => {
   console.log('🛑 SIGTERM received, shutting down gracefully...');
   process.exit(0);
 });
-
 // Start the server
 startServer();
 
