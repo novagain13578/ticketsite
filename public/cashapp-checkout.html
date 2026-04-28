@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cash App Payment - Concert Tickets</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --primary: #1a4fc4;
+      --primary-dark: #0a2a6e;
+      --success: #4caf50;
+      --warning: #ff9800;
+      --error: #f44336;
+      --bg: #f0f2f5;
+      --white: #ffffff;
+      --text: #111111;
+      --text-muted: #666666;
+      --border: #d0d0d0;
+      --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      --font: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    /* ============================================================================
+     * OVERLAY & MODAL BACKDROP
+     * ============================================================================ */
+
+    .cashapp-modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9998;
+      padding: 20px;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s, visibility 0.3s;
+    }
+
+    .cashapp-modal-backdrop.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .cashapp-modal {
+      background: var(--white);
+      border-radius: 16px;
+      max-width: 500px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      animation: slideUp 0.3s ease-out;
+      position: relative;
+    }
+
+    @keyframes slideUp {
+      from {
+        transform: translateY(50px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    /* ============================================================================
+     * MODAL HEADER
+     * ============================================================================ */
+
+    .modal-header {
+      padding: 24px;
+      border-bottom: 1px solid #e0e0e0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      background: var(--white);
+      z-index: 10;
+    }
+
+    .modal-title-section h2 {
+      font-size: 20px;
+      font-weight: 700;
+      margin: 0 0 4px 0;
+      color: var(--text);
+    }
+
+    .modal-title-section p {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin: 0;
+    }
+
+    .btn-close {
+      background: none;
+      border: none;
+      font-size: 28px;
+      cursor: pointer;
+      color: var(--text-muted);
+      padding: 0;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.2s;
+    }
+
+    .btn-close:hover {
+      color: var(--text);
+    }
+
+    /* ============================================================================
+     * MODAL BODY
+     * ============================================================================ */
+
+    .modal-body {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Progress indicator */
+    .progress-indicator {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .progress-step {
+      flex: 1;
+      height: 3px;
+      background: #e0e0e0;
+      border-radius: 2px;
+      transition: background 0.3s;
+    }
+
+    .progress-step.active {
+      background: var(--primary);
+    }
+
+    .progress-step.completed {
+      background: var(--success);
+    }
+
+    /* ============================================================================
+     * STEP 1: GENERATE PAYMENT DETAILS
+     * ============================================================================ */
+
+    .cashapp-stage-1 {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .payment-info-box {
+      background: #f5f5f5;
+      border: 1px solid #e0e0e0;
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .info-item {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .info-label {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+    }
+
+    .info-value {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .transfer-instructions {
+      background: #e8f5e9;
+      border-left: 4px solid var(--success);
+      padding: 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      line-height: 1.6;
+      color: #2e7d32;
+    }
+
+    .transfer-instructions strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+
+    .transfer-instructions ol {
+      margin-left: 18px;
+      margin-top: 8px;
+    }
+
+    .transfer-instructions li {
+      margin-bottom: 6px;
+    }
+
+    /* ============================================================================
+     * STEP 2: COPY CASHTAG
+     * ============================================================================ */
+
+    .cashtag-display {
+      background: linear-gradient(135deg, #1a4fc4 0%, #0a2a6e 100%);
+      border-radius: 12px;
+      padding: 24px;
+      text-align: center;
+      color: white;
+      margin: 20px 0;
+    }
+
+    .cashtag-label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      opacity: 0.9;
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    .cashtag-value {
+      font-size: 36px;
+      font-weight: 700;
+      font-family: 'Monaco', monospace;
+      margin-bottom: 16px;
+      word-break: break-all;
+      letter-spacing: 2px;
+    }
+
+    .copy-btn {
+      background: rgba(255, 255, 255, 0.2);
+      border: 2px solid rgba(255, 255, 255, 0.4);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: inline-block;
+    }
+
+    .copy-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+      border-color: rgba(255, 255, 255, 0.6);
+    }
+
+    .copy-btn.copied {
+      background: var(--success);
+      border-color: var(--success);
+    }
+
+    /* ============================================================================
+     * STEP 3: TRANSFER PROOF
+     * ============================================================================ */
+
+    .cashapp-stage-2 {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .file-upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 40px 20px;
+      text-align: center;
+      transition: all 0.3s;
+      cursor: pointer;
+      background: #f9f9f9;
+    }
+
+    .file-upload-zone.dragover {
+      background: #f0f8ff;
+      border-color: var(--primary);
+    }
+
+    .file-upload-zone svg {
+      width: 48px;
+      height: 48px;
+      color: var(--primary);
+      margin-bottom: 12px;
+    }
+
+    .file-upload-zone p {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    .file-upload-zone .subtitle {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .file-upload-zone input[type="file"] {
+      display: none;
+    }
+
+    .file-preview {
+      margin-top: 16px;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .file-preview img {
+      width: 100%;
+      max-height: 250px;
+      object-fit: contain;
+      background: #f5f5f5;
+    }
+
+    .upload-info {
+      background: #fff3e0;
+      border-left: 4px solid var(--warning);
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      color: #e65100;
+    }
+
+    /* ============================================================================
+     * STATUS ALERTS
+     * ============================================================================ */
+
+    .alert {
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      margin-bottom: 16px;
+    }
+
+    .alert-icon {
+      font-size: 18px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .alert-success {
+      background: #e8f5e9;
+      border: 1px solid #c8e6c9;
+      color: #2e7d32;
+    }
+
+    .alert-error {
+      background: #ffebee;
+      border: 1px solid #ffcdd2;
+      color: #c62828;
+    }
+
+    .alert-loading {
+      background: #e3f2fd;
+      border: 1px solid #bbdefb;
+      color: #1565c0;
+    }
+
+    /* ============================================================================
+     * BUTTONS
+     * ============================================================================ */
+
+    .button-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .btn {
+      padding: 14px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-family: var(--font);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      text-decoration: none;
+      min-height: 48px;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+      width: 100%;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: var(--primary-dark);
+      box-shadow: 0 4px 12px rgba(26, 79, 196, 0.3);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: #f0f0f0;
+      color: var(--text);
+      border: 1px solid var(--border);
+      width: 100%;
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: #e0e0e0;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* ============================================================================
+     * SEATING INFO
+     * ============================================================================ */
+
+    .seat-info {
+      background: #f9f9f9;
+      border: 1px solid #e9e9e9;
+      border-radius: 12px;
+      padding: 16px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .seat-info-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .seat-info-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+    }
+
+    .seat-info-value {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    /* ============================================================================
+     * RESPONSIVE
+     * ============================================================================ */
+
+    @media (max-width: 480px) {
+      .cashapp-modal {
+        border-radius: 20px 20px 0 0;
+        max-height: 95vh;
+      }
+
+      .modal-header {
+        padding: 16px;
+      }
+
+      .modal-body {
+        padding: 16px;
+      }
+
+      .cashtag-value {
+        font-size: 28px;
+      }
+
+      .seat-info {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Cash App Payment Modal -->
+<div id="cashappModal" class="cashapp-modal-backdrop">
+  <div class="cashapp-modal">
+    <!-- Modal Header -->
+    <div class="modal-header">
+      <div class="modal-title-section">
+        <h2>Cash App Payment</h2>
+        <p id="modalSubtitle">Send payment to confirm your purchase</p>
+      </div>
+      <button class="btn-close" id="modalCloseBtn">×</button>
+    </div>
+
+    <!-- Modal Body -->
+    <div class="modal-body">
+      <!-- Progress Indicator -->
+      <div class="progress-indicator">
+        <div id="progressStep1" class="progress-step active"></div>
+        <div id="progressStep2" class="progress-step"></div>
+        <div id="progressStep3" class="progress-step"></div>
+      </div>
+
+      <!-- Seat Information -->
+      <div class="seat-info">
+        <div class="seat-info-item">
+          <span class="seat-info-label">Section</span>
+          <span class="seat-info-value" id="seatSection">101</span>
+        </div>
+        <div class="seat-info-item">
+          <span class="seat-info-label">Row</span>
+          <span class="seat-info-value" id="seatRow">A</span>
+        </div>
+        <div class="seat-info-item">
+          <span class="seat-info-label">Seat</span>
+          <span class="seat-info-value" id="seatNumber">120</span>
+        </div>
+        <div class="seat-info-item">
+          <span class="seat-info-label">Price</span>
+          <span class="seat-info-value" id="seatPrice">$150.00</span>
+        </div>
+      </div>
+
+      <!-- STAGE 1: Generate Payment Details -->
+      <div id="stage1" class="cashapp-stage-1">
+        <h3 style="font-size: 16px; margin: 0; color: var(--text);">Payment Instructions</h3>
+        
+        <div class="payment-info-box">
+          <div class="info-item">
+            <span class="info-label">Amount to Send</span>
+            <span class="info-value" id="amountToSend">$150.00</span>
+          </div>
+
+          <div class="transfer-instructions">
+            <strong>📱 How to send payment:</strong>
+            <ol>
+              <li>Click "Generate Payment Details" below</li>
+              <li>Copy the Cash App $Cashtag</li>
+              <li>Open Cash App on your phone</li>
+              <li>Send the exact amount to the $Cashtag</li>
+              <li>Take a screenshot of the confirmation</li>
+              <li>Return here and upload the screenshot</li>
+            </ol>
+          </div>
+        </div>
+
+        <button id="generatePaymentBtn" class="btn btn-primary">
+          Generate Payment Details
+        </button>
+      </div>
+
+      <!-- STAGE 2: Display Cashtag & Copy -->
+      <div id="stage2" class="cashapp-stage-2" style="display: none;">
+        <h3 style="font-size: 16px; margin: 0; color: var(--text);">Send Payment</h3>
+
+        <div class="cashtag-display">
+          <span class="cashtag-label">Send to</span>
+          <div class="cashtag-value" id="cashtag">$LOADING</div>
+          <button id="copyCashtagBtn" class="copy-btn">📋 Copy $Cashtag</button>
+        </div>
+
+        <div style="background: #fafafa; padding: 16px; border-radius: 8px; text-align: center;">
+          <p style="font-size: 13px; color: var(--text-muted); margin: 0;">
+            ⏱️ Send the payment within <strong>10 minutes</strong> to keep your seat reserved
+          </p>
+        </div>
+
+        <button id="transferredBtn" class="btn btn-primary">
+          ✓ I Have Made the Transfer
+        </button>
+      </div>
+
+      <!-- STAGE 3: Upload Proof -->
+      <div id="stage3" class="cashapp-stage-2" style="display: none;">
+        <h3 style="font-size: 16px; margin: 0; color: var(--text);">Upload Proof of Payment</h3>
+
+        <div class="upload-info">
+          <strong>📸 Take a screenshot</strong><br>
+          Show the Cash App confirmation screen with your transaction details
+        </div>
+
+        <form id="uploadForm">
+          <div class="file-upload-zone" id="uploadZone">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+              <circle cx="8.5" cy="8.5" r="1.5"></circle>
+              <path d="M21 15l-5-5L5 21"></path>
+            </svg>
+            <p>Click to upload or drag and drop</p>
+            <p class="subtitle">PNG, JPG, GIF (max 5MB)</p>
+            <input type="file" id="screenshotInput" accept="image/*">
+          </div>
+
+          <div id="filePreview" class="file-preview" style="display: none;">
+            <img id="previewImage" src="" alt="Preview">
+          </div>
+
+          <div class="button-group">
+            <button type="submit" id="submitUploadBtn" class="btn btn-primary" disabled>
+              Submit Payment Proof
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Loading/Status Messages -->
+      <div id="alertContainer"></div>
+    </div>
+  </div>
+</div>
+
+<script src="js/cashapp-checkout.js"></script>
+
+</body>
+</html>

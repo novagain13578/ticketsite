@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checkout | Concert Tickets</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: #f5f7fb;
+      min-height: 100vh;
+      padding: 0;
+    }
+
+    /* ============================================
+       HEADER
+    ============================================ */
+    .header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: #ffffff;
+      border-bottom: 1px solid #e5e7eb;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 1000;
+      height: 60px;
+    }
+
+    .header-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #1a1a1a;
+    }
+
+    .header-close {
+      background: none;
+      border: none;
+      font-size: 28px;
+      color: #1a1a1a;
+      cursor: pointer;
+      padding: 0;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .header-close:hover {
+      background: rgba(0, 0, 0, 0.05);
+      border-radius: 8px;
+    }
+
+    /* ============================================
+       MAIN CONTENT
+    ============================================ */
+    .container {
+      margin-top: 80px;
+      margin-bottom: 100px;
+      padding: 0 20px;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    /* ============================================
+       ORDER SUMMARY SECTION
+    ============================================ */
+    .order-section {
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .order-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #666;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+      letter-spacing: 0.5px;
+    }
+
+    .order-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 12px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .order-item:last-child {
+      border-bottom: none;
+    }
+
+    .item-location {
+      font-size: 14px;
+      color: #333;
+      font-weight: 500;
+    }
+
+    .item-section {
+      font-size: 13px;
+      color: #999;
+      margin-top: 2px;
+    }
+
+    .item-price {
+      font-size: 14px;
+      font-weight: 600;
+      color: #333;
+      text-align: right;
+    }
+
+    /* ============================================
+       INFO BOX
+    ============================================ */
+    .info-box {
+      background: #f9f9f9;
+      border-left: 3px solid #ffc107;
+      padding: 12px 16px;
+      border-radius: 4px;
+      margin-top: 16px;
+      font-size: 12px;
+      color: #666;
+      line-height: 1.4;
+    }
+
+    .info-box a {
+      color: #0066cc;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .info-box a:hover {
+      text-decoration: underline;
+    }
+
+    /* ============================================
+       DESCRIPTION SECTION
+    ============================================ */
+    .description-section {
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .description {
+      font-size: 12px;
+      font-weight: 600;
+      color: #666;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+      letter-spacing: 0.5px;
+    }
+
+    .description-content {
+      font-size: 14px;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    /* ============================================
+       PAYMENT METHODS
+    ============================================ */
+    .payment-section {
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .payment-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #666;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+      letter-spacing: 0.5px;
+    }
+
+    .payment-methods {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    .payment-method {
+      display: flex;
+      align-items: center;
+      padding: 12px 16px;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background: #ffffff;
+    }
+
+    .payment-method:hover {
+      border-color: #0066cc;
+      background: #f0f7ff;
+    }
+
+    .payment-method.active {
+      border-color: #0066cc;
+      background: #f0f7ff;
+    }
+
+    .method-icon {
+      font-size: 24px;
+      margin-right: 12px;
+      min-width: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* NEW: SVG Scaler for logos */
+    .method-icon svg {
+      width: 26px;
+      height: 26px;
+      display: block;
+    }
+
+    .method-info {
+      flex: 1;
+    }
+
+    .method-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .method-details {
+      font-size: 12px;
+      color: #999;
+      margin-top: 2px;
+    }
+
+    .method-radio {
+      width: 20px;
+      height: 20px;
+      border: 2px solid #d0d0d0;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .payment-method.active .method-radio {
+      border-color: #0066cc;
+      background: #0066cc;
+    }
+
+    .method-radio::after {
+      content: '✓';
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 700;
+      opacity: 0;
+    }
+
+    .payment-method.active .method-radio::after {
+      opacity: 1;
+    }
+
+    /* ============================================
+       SUBTOTAL & PRICING
+    ============================================ */
+    .pricing-section {
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .pricing-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid #f0f0f0;
+      font-size: 14px;
+    }
+
+    .pricing-row:last-child {
+      border-bottom: none;
+    }
+
+    .pricing-label {
+      color: #333;
+      font-weight: 500;
+    }
+
+    .pricing-value {
+      color: #333;
+      font-weight: 600;
+    }
+
+    .subtotal-row {
+      font-weight: 600;
+    }
+
+    .subtotal-value {
+      font-size: 16px;
+      color: #0a2a6e;
+      font-weight: 700;
+    }
+
+    /* ============================================
+       ACTION BUTTONS
+    ============================================ */
+    .button-section {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #ffffff;
+      border-top: 1px solid #e5e7eb;
+      padding: 16px 20px;
+      max-width: 640px;
+      margin-left: auto;
+      margin-right: auto;
+      z-index: 999;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 12px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 14px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #4b9dbb 0%, #2a7a8f 100%);
+      color: #ffffff;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(75, 157, 187, 0.3);
+    }
+
+    .btn-primary:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: #f5f7fb;
+      color: #333;
+      border: 1px solid #e5e7eb;
+    }
+
+    .btn-secondary:hover {
+      background: #eef0f7;
+    }
+
+    /* ============================================
+       RESPONSIVE
+    ============================================ */
+    @media (max-width: 480px) {
+      .container {
+        padding: 0 16px;
+      }
+
+      .order-section,
+      .description-section,
+      .payment-section,
+      .pricing-section {
+        padding: 16px;
+      }
+
+      .payment-methods {
+        grid-template-columns: 1fr;
+      }
+
+      .header {
+        padding: 12px 16px;
+      }
+
+      .btn {
+        padding: 12px 16px;
+        font-size: 13px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1 class="header-title">Order Summary</h1>
+    <button class="header-close" onclick="goBack()">&times;</button>
+  </div>
+
+  <div class="container">
+    <div id="view-method-selection">
+      <div class="order-section" id="orderItems">
+      </div>
+
+    <div class="pricing-section">
+      <div class="pricing-row subtotal-row">
+        <span class="pricing-label">Subtotal</span>
+        <span class="pricing-value subtotal-value" id="subtotalAmount">$0.00</span>
+      </div>
+      <div class="pricing-row">
+        <span class="pricing-label" id="ticketCount">0 Tickets</span>
+        <span class="pricing-value" id="ticketMultiplier">× 1</span>
+      </div>
+    </div>
+
+    <div class="description-section">
+      <div class="description">Seating</div>
+      <div class="description-content" id="seatDescription">400 Level</div>
+    </div>
+
+      <div class="payment-section">
+        <div class="payment-title">Select Payment Method</div>
+        <div class="payment-methods" id="paymentMethods">
+          </div>
+      </div>
+    </div>
+
+    <div id="view-dynamic-content" style="display: none;"></div>
+  </div>
+
+  <div class="button-section">
+    <div class="button-group">
+      <button class="btn btn-secondary" onclick="goBack()">Back</button>
+      <button class="btn btn-primary" id="nextBtn" onclick="proceedToPayment()" disabled>Next</button>
+    </div>
+  </div>
+
+  <style>
+    /* ============================================
+       PAYSTACK-STYLE MULTI-STEP FLOW ADDITIONS
+    ============================================ */
+    .hidden-view {
+      display: none !important;
+    }
+
+    /* LOADING SPINNER STATE */
+    .loading-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 80px 20px 120px;
+      min-height: 400px;
+    }
+
+    .spinner {
+      width: 60px;
+      height: 60px;
+      border: 4px solid #e5e7eb;
+      border-top: 4px solid #0066cc;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      font-size: 16px;
+      color: #333;
+      font-weight: 600;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+
+    .loading-subtext {
+      font-size: 13px;
+      color: #999;
+      text-align: center;
+    }
+
+    /* PAYMENT DETAILS STATE */
+    .details-container {
+      padding: 20px 0;
+    }
+
+    .payment-details-card {
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .details-header {
+      font-size: 14px;
+      font-weight: 600;
+      color: #0066cc;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 16px;
+    }
+
+    .details-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .details-row:last-child {
+      border-bottom: none;
+    }
+
+    .details-label {
+      font-size: 13px;
+      color: #666;
+      font-weight: 500;
+    }
+
+    .details-value {
+      font-size: 14px;
+      color: #333;
+      font-weight: 600;
+      font-family: 'Courier New', monospace;
+    }
+
+    .copy-btn {
+      background: #f0f7ff;
+      border: 1px solid #0066cc;
+      color: #0066cc;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+
+    .copy-btn:hover {
+      background: #0066cc;
+      color: #ffffff;
+    }
+
+    /* PROOF UPLOAD STATE */
+    .upload-container {
+      padding: 20px 0;
+    }
+
+    .upload-zone {
+      background: #f9f9f9;
+      border: 2px dashed #d0d0d0;
+      border-radius: 12px;
+      padding: 40px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin-bottom: 20px;
+    }
+
+    .upload-zone:hover {
+      border-color: #0066cc;
+      background: #f0f7ff;
+    }
+
+    .upload-zone.dragover {
+      border-color: #0066cc;
+      background: #e6f2ff;
+    }
+
+    .upload-icon {
+      font-size: 40px;
+      margin-bottom: 12px;
+    }
+
+    .upload-text {
+      font-size: 14px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 4px;
+    }
+
+    .upload-subtext {
+      font-size: 12px;
+      color: #999;
+    }
+
+    .upload-input {
+      display: none;
+    }
+
+    .image-preview {
+      width: 100%;
+      max-width: 300px;
+      margin: 0 auto 20px;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .image-preview img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .preview-remove {
+      background: #f5f7fb;
+      border: 1px solid #e5e7eb;
+      color: #333;
+      padding: 10px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      margin-top: 12px;
+      transition: all 0.2s ease;
+    }
+
+    .preview-remove:hover {
+      background: #f0f0f0;
+    }
+
+    /* STATE PROGRESS INDICATOR */
+    .step-indicator {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding: 0 20px;
+    }
+
+    .step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex: 1;
+    }
+
+    .step-number {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #e5e7eb;
+      color: #999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      margin-bottom: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .step.active .step-number {
+      background: #0066cc;
+      color: #ffffff;
+    }
+
+    .step.completed .step-number {
+      background: #22c55e;
+      color: #ffffff;
+    }
+
+    .step-label {
+      font-size: 11px;
+      color: #999;
+      font-weight: 600;
+      text-align: center;
+      transition: all 0.2s ease;
+    }
+
+    .step.active .step-label {
+      color: #0066cc;
+    }
+
+    .step-connector {
+      flex: 0.5;
+      height: 2px;
+      background: #e5e7eb;
+      margin: 0 8px;
+      margin-top: 16px;
+    }
+
+    .step-connector.active {
+      background: #0066cc;
+    }
+  </style>
+
+  <script>
+    // ── PAYMENT METHODS (Upgraded to SVGs) ─────────────────
+    const PAYMENT_METHODS = [
+      { 
+        id: 'paypal', 
+        name: 'PayPal', 
+        icon: '<svg viewBox="0 0 24 24"><path fill="#003087" d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944.901C5.026.382 5.474 0 6.007 0h7.46c2.57 0 4.578.543 5.69 1.81 1.01 1.15 1.304 2.82 1.11 4.5-.506 4.35-3.55 6.78-7.59 6.78h-1.92c-.6 0-1.12.44-1.22 1.03l-.84 5.37c-.05.32-.34.55-.66.55z"/><path fill="#0079C1" d="M10.15 15.02h-1.92c-.6 0-1.12.44-1.22 1.03l-.84 5.37c-.05.32-.34.55-.66.55h-2.31c-.39 0-.68-.34-.62-.73l1.9-12.01c.07-.46.47-.8.94-.8h2.38c2.09 0 3.75-.41 4.54-1.27.76-.81 1.04-2.14.77-3.84-.2-1.3-.92-2.18-1.92-2.63-1.07-.49-2.61-.49-4.57-.49H5.3c-.3 0-.57.21-.62.51l-2.4 15.13c-.04.28.18.52.47.52h3.58l-.66 4.19c-.06.39.24.74.63.74h4.43c2.72 0 4.88-1.4 5.33-4.32.22-1.41-.09-2.58-.87-3.37-.8-.82-2.18-1.2-4-1.2z"/></svg>', 
+        details: 'Pay securely with PayPal' 
+      },
+      { 
+        id: 'cashapp', 
+        name: 'Cash App', 
+        icon: '<svg viewBox="0 0 24 24" fill="#00D632"><path d="M19.16 2.5H4.84A2.34 2.34 0 0 0 2.5 4.84v14.32A2.34 2.34 0 0 0 4.84 21.5h14.32a2.34 2.34 0 0 0 2.34-2.34V4.84A2.34 2.34 0 0 0 19.16 2.5zm-5.11 11.23a2.6 2.6 0 0 1-2.52 2.73h-1.04v1.89h-1.5v-1.89H6.94v-1.5h2.05v-2.05c0-.62.47-1.12 1.05-1.12h2.24c.48 0 .87.42.87.94 0 .52-.39.94-.87.94h-1.53c-1.32 0-2.4-.95-2.4-2.12v-.83a2.6 2.6 0 0 1 2.52-2.73h1.04V6.15h1.5v1.89h2.05v1.5h-2.05v2.05c0 .62-.47 1.12-1.05 1.12H10.1c-.48 0-.87-.42-.87-.94 0-.52.39-.94.87-.94h1.53c1.32 0 2.4.95 2.4 2.12v.83z"/></svg>', 
+        details: 'Transfer via Cash App' 
+      },
+      { 
+        id: 'chime', 
+        name: 'Chime', 
+        icon: '<svg viewBox="0 0 24 24" fill="#25C85B"><path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/><path d="M6 14h6v2H6z"/></svg>', 
+        details: 'Pay with Chime account' 
+      },
+      { 
+        id: 'venmo', 
+        name: 'Venmo', 
+        icon: '<svg viewBox="0 0 24 24" fill="#008CFF"><path d="M15.42 1.5l-6.24 16.5c-.29.83-.8 1.25-1.54 1.25H4l4.24-11.16L6.5 6.06c-.1-.31-.05-.59.16-.84.21-.25.48-.38.83-.38h3.04l.95 2.5 3.32-5.84h2.62z"/></svg>', 
+        details: 'Send via Venmo' 
+      },
+      { 
+        id: 'applepay', 
+        name: 'Apple Pay', 
+        icon: '<svg viewBox="0 0 24 24" fill="#000000"><path d="M12.63 11.22c.04-1.63 1.33-2.42 1.4-2.46-1.02-1.49-2.59-1.65-3.15-1.68-1.34-.14-2.62.79-3.3.79-.69 0-1.74-.77-2.85-.75-1.45.02-2.79.84-3.54 2.14-1.52 2.65-.39 6.57 1.1 8.73.72 1.05 1.57 2.22 2.7 2.18 1.09-.04 1.52-.7 2.83-.7 1.3 0 1.69.7 2.85.7 1.18 0 1.93-1.05 2.63-2.08.82-1.2 1.15-2.36 1.17-2.42-.03-.01-2.26-.87-2.22-3.41M13.88 5.75c.6-.73 1.01-1.74.9-2.75-.9.04-1.94.6-2.55 1.33-.55.65-1.02 1.69-.89 2.68.99.08 1.95-.53 2.54-1.26"/></svg>', 
+        details: 'Pay with Apple Pay' 
+      }
+    ];
+
+    const PAYMENT_DETAILS = {
+      paypal: { tag: 'tickets.concert@paypal.me', id: 'CONCERTS2026', amount: null },
+      cashapp: { tag: '$ticketmaster2026', id: 'CA2026CONCERT', amount: null },
+      chime: { tag: 'chime.me/concerttickets', id: 'CHM2026', amount: null },
+      venmo: { tag: '@concerttickets2026', id: 'VEN2026', amount: null },
+      applepay: { tag: 'concerttickets@apple.com', id: 'APP2026', amount: null }
+    };
+
+    // ── BACKEND CONFIGURATION ────────────────────────────
+    const BACKEND_URL = 'http://localhost:3000';
+
+    // ── STATE MACHINE ──────────────────────────────────────
+    const STATES = {
+      METHOD_SELECTION: 'method_selection',
+      LOADING: 'loading',
+      PAYMENT_DETAILS: 'payment_details',
+      PROOF_UPLOAD: 'proof_upload'
+    };
+
+    let currentState = STATES.METHOD_SELECTION;
+    let cartData = [];
+    let quantityMultiplier = 1;
+    let selectedPaymentMethod = null;
+    let uploadedProof = null;
+    let adminPaymentData = null;
+    let currentReservationId = null;
+    let pollingInterval = null;
+
+    // ── INITIALIZATION ────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+      loadCartData();
+      
+      // Redirect if cart is empty
+      if (cartData.length === 0) {
+        setTimeout(() => {
+          alert('No items in cart. Redirecting to tickets page...');
+          window.location.href = 'tickets-vegas.html';
+        }, 500);
+        return;
+      }
+
+      renderOrderItems();
+      renderPaymentMethods();
+      updatePricingDisplay();
+    });
+
+    // ── LOAD CART DATA ────────────────────────────────────
+    function loadCartData() {
+      const stored = localStorage.getItem('concertCart');
+      const quantity = localStorage.getItem('concertQuantity');
+      
+      if (stored) {
+        try {
+          cartData = JSON.parse(stored);
+        } catch (e) {
+          console.error('Failed to parse cart:', e);
+          cartData = [];
+        }
+      }
+      
+      if (quantity) {
+        quantityMultiplier = parseInt(quantity);
+      }
+    }
+
+    // ── RENDER ORDER ITEMS ────────────────────────────────
+    function renderOrderItems() {
+      const container = document.getElementById('orderItems');
+      
+      if (cartData.length === 0) {
+        container.innerHTML = '<p style="padding: 20px; text-align: center; color: #999;">No items in cart</p>';
+        return;
+      }
+
+      let html = '<div class="order-title">Order Items</div>';
+      
+      cartData.forEach(item => {
+        const itemPrice = item.price * quantityMultiplier;
+        html += `
+          <div class="order-item">
+            <div>
+              <div class="item-location">Sec ${item.section} · Row ${item.row}</div>
+              <div class="item-section">400 Level</div>
+            </div>
+            <div class="item-price">$${itemPrice.toFixed(2)}</div>
+          </div>
+        `;
+      });
+
+      html += `
+        <div class="info-box">
+          Event ticket limit: ${cartData.length} / <a href="#">Full ticket limit info</a>
+        </div>
+      `;
+
+      container.innerHTML = html;
+    }
+
+    // ── RENDER PAYMENT METHODS ────────────────────────────
+    function renderPaymentMethods() {
+      const container = document.getElementById('paymentMethods');
+      
+      container.innerHTML = PAYMENT_METHODS.map(method => `
+        <div class="payment-method" onclick="selectPaymentMethod('${method.id}', this)">
+          <div class="method-icon">${method.icon}</div>
+          <div class="method-info">
+            <div class="method-name">${method.name}</div>
+            <div class="method-details">${method.details}</div>
+          </div>
+          <div class="method-radio"></div>
+        </div>
+      `).join('');
+    }
+
+    // ── SELECT PAYMENT METHOD ─────────────────────────────
+    function selectPaymentMethod(methodId, element) {
+      document.querySelectorAll('.payment-method').forEach(m => {
+        m.classList.remove('active');
+      });
+      
+      element.classList.add('active');
+      selectedPaymentMethod = methodId;
+      document.getElementById('nextBtn').disabled = false;
+    }
+
+    // ── UPDATE PRICING DISPLAY ────────────────────────────
+    function updatePricingDisplay() {
+      const baseTotal = cartData.reduce((sum, item) => sum + item.price, 0);
+      const grandTotal = baseTotal * quantityMultiplier;
+      
+      document.getElementById('subtotalAmount').textContent = `$${grandTotal.toFixed(2)}`;
+      document.getElementById('ticketCount').textContent = `${cartData.length} Ticket${cartData.length !== 1 ? 's' : ''}`;
+      document.getElementById('ticketMultiplier').textContent = `× ${quantityMultiplier}`;
+      
+      if (cartData.length > 0) {
+        const sections = [...new Set(cartData.map(item => `Sec ${item.section}`))];
+        document.getElementById('seatDescription').textContent = sections.join(' · ');
+      }
+
+      // Store total for payment details
+      const grandTotal_str = grandTotal.toFixed(2);
+      Object.keys(PAYMENT_DETAILS).forEach(key => {
+        PAYMENT_DETAILS[key].amount = grandTotal_str;
+      });
+    }
+
+    // ── STATE MACHINE: TRANSITION ────────────────────────
+    function transitionTo(newState) {
+      currentState = newState;
+      renderCurrentState();
+    }
+
+    // ── RENDER CURRENT STATE ──────────────────────────────
+    function renderCurrentState() {
+      const methodView = document.getElementById('view-method-selection');
+      const dynamicView = document.getElementById('view-dynamic-content');
+      const nextBtn = document.getElementById('nextBtn');
+
+      switch (currentState) {
+        case STATES.METHOD_SELECTION:
+          methodView.style.display = 'block';
+          dynamicView.style.display = 'none';
+          nextBtn.textContent = 'Next';
+          nextBtn.disabled = !selectedPaymentMethod;
+          nextBtn.style.display = 'block';
+          nextBtn.onclick = () => proceedToPayment();
+          break;
+
+        case STATES.LOADING:
+          methodView.style.display = 'none';
+          dynamicView.style.display = 'block';
+          renderLoadingState();
+          nextBtn.style.display = 'none';
+          break;
+
+        case STATES.PAYMENT_DETAILS:
+          methodView.style.display = 'none';
+          dynamicView.style.display = 'block';
+          renderPaymentDetailsState();
+          nextBtn.textContent = 'Continue to Upload';
+          nextBtn.disabled = false;
+          nextBtn.style.display = 'block';
+          nextBtn.onclick = () => transitionTo(STATES.PROOF_UPLOAD);
+          break;
+
+        case STATES.PROOF_UPLOAD:
+          methodView.style.display = 'none';
+          dynamicView.style.display = 'block';
+          renderProofUploadState();
+          nextBtn.textContent = 'Complete Purchase';
+          nextBtn.disabled = !uploadedProof;
+          nextBtn.style.display = 'block';
+          nextBtn.onclick = () => completePurchase();
+          break;
+      }
+    }
+
+    // ── LOADING STATE DISPLAY ─────────────────────────────
+    function renderLoadingState() {
+      const container = document.getElementById('view-dynamic-content');
+      container.innerHTML = `
+        <div class="loading-container">
+          <div class="spinner"></div>
+          <div class="loading-text">Generating secure payment ID...</div>
+          <div class="loading-subtext">Please wait while we set up your payment</div>
+        </div>
+      `;
+    }
+
+    // ── PAYMENT DETAILS STATE DISPLAY ─────────────────────
+    function renderPaymentDetailsState() {
+      const container = document.getElementById('view-dynamic-content');
+      const methodInfo = PAYMENT_METHODS.find(m => m.id === selectedPaymentMethod);
+      const baseTotal = cartData.reduce((sum, item) => sum + item.price, 0);
+      const grandTotal = baseTotal * quantityMultiplier;
+
+      container.innerHTML = `
+        <div class="details-container">
+          <div class="payment-details-card">
+            <div class="details-header">Payment Instructions</div>
+            
+            <div class="details-row">
+              <div class="details-label">Method</div>
+              <div class="details-value">${methodInfo.name}</div>
+            </div>
+
+            <div class="details-row">
+              <div class="details-label">Send Amount</div>
+              <div class="details-value">$${grandTotal.toFixed(2)}</div>
+            </div>
+
+            <div class="details-row">
+              <div class="details-label">Send To</div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <div class="details-value">${adminPaymentData.targetTag}</div>
+                <button class="copy-btn" onclick="copyToClipboard('${adminPaymentData.targetTag}')">Copy</button>
+              </div>
+            </div>
+
+            <div class="details-row">
+              <div class="details-label">Reference ID</div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <div class="details-value">${adminPaymentData.referenceId}</div>
+                <button class="copy-btn" onclick="copyToClipboard('${adminPaymentData.referenceId}')">Copy</button>
+              </div>
+            </div>
+
+            <div class="details-row">
+              <div class="details-label">Description</div>
+              <div class="details-value">Concert Tickets - ${cartData.length} tickets</div>
+            </div>
+          </div>
+
+          <div class="payment-details-card" style="background: #f0f7ff; border-left: 3px solid #0066cc;">
+            <div style="font-size: 12px; color: #0066cc; font-weight: 600;">💡 Important</div>
+            <div style="font-size: 13px; color: #333; margin-top: 8px; line-height: 1.5;">
+              Include the reference ID in your payment description so we can match your proof. You will need to upload proof of payment in the next step.
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // ── PROOF UPLOAD STATE DISPLAY ────────────────────────
+    function renderProofUploadState() {
+      const container = document.getElementById('view-dynamic-content');
+
+      let uploadHTML = `
+        <div class="upload-container">
+          <div class="payment-details-card">
+            <div class="details-header">Upload Payment Proof</div>
+            <div style="font-size: 13px; color: #666; margin-bottom: 16px;">
+              Please upload a screenshot showing your payment was sent. Include amount, timestamp, and recipient.
+            </div>
+          </div>
+
+          <div class="upload-zone" id="uploadZone" onclick="triggerFileInput()">
+            <div class="upload-icon">📸</div>
+            <div class="upload-text">Click to upload or drag and drop</div>
+            <div class="upload-subtext">PNG, JPG, or GIF (max 10MB)</div>
+          </div>
+
+          <input type="file" id="proofInput" class="upload-input" accept="image/*" onchange="handleFileUpload(event)">
+          <div id="previewContainer"></div>
+        </div>
+      `;
+
+      container.innerHTML = uploadHTML;
+
+      // Wire drag and drop
+      const uploadZone = document.getElementById('uploadZone');
+      uploadZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadZone.classList.add('dragover');
+      });
+
+      uploadZone.addEventListener('dragleave', () => {
+        uploadZone.classList.remove('dragover');
+      });
+
+      uploadZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadZone.classList.remove('dragover');
+        if (e.dataTransfer.files.length > 0) {
+          document.getElementById('proofInput').files = e.dataTransfer.files;
+          handleFileUpload({ target: document.getElementById('proofInput') });
+        }
+      });
+    }
+
+    // ── FILE INPUT TRIGGER ────────────────────────────────
+    function triggerFileInput() {
+      document.getElementById('proofInput').click();
+    }
+
+    // ── HANDLE FILE UPLOAD ────────────────────────────────
+    function handleFileUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        uploadedProof = {
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          data: e.target.result
+        };
+
+        const previewContainer = document.getElementById('previewContainer');
+        previewContainer.innerHTML = `
+          <div class="image-preview">
+            <img src="${e.target.result}" alt="Proof preview">
+          </div>
+          <div style="text-align: center;">
+            <div style="font-size: 13px; color: #666; margin-bottom: 12px;">
+              ✓ File uploaded: ${file.name}
+            </div>
+            <button class="preview-remove" onclick="removeUpload()">Remove File</button>
+          </div>
+        `;
+
+        document.getElementById('nextBtn').disabled = false;
+      };
+
+      reader.readAsDataURL(file);
+    }
+
+    // ── REMOVE UPLOAD ─────────────────────────────────────
+    function removeUpload() {
+      uploadedProof = null;
+      document.getElementById('proofInput').value = '';
+      document.getElementById('previewContainer').innerHTML = '';
+      document.getElementById('nextBtn').disabled = true;
+      renderProofUploadState();
+    }
+
+    // ── COPY TO CLIPBOARD ─────────────────────────────────
+    function copyToClipboard(text) {
+      navigator.clipboard.writeText(text).then(() => {
+        alert('Copied: ' + text);
+      }).catch(() => {
+        alert('Failed to copy');
+      });
+    }
+
+    // ── PROCEED TO PAYMENT (Start State Machine) ──────────
+    function proceedToPayment() {
+      if (!selectedPaymentMethod) {
+        alert('Please select a payment method');
+        return;
+      }
+
+      localStorage.setItem('selectedPaymentMethod', selectedPaymentMethod);
+      
+      // Initiate checkout transaction with backend
+      initiateCheckoutTransaction(selectedPaymentMethod);
+    }
+
+    // ── INITIATE CHECKOUT TRANSACTION ──────────────────────
+    async function initiateCheckoutTransaction(method) {
+      try {
+        const reservationId = `RES-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+        currentReservationId = reservationId;
+        
+        const baseTotal = cartData.reduce((sum, item) => sum + item.price, 0);
+        const grandTotal = baseTotal * quantityMultiplier;
+
+        // Transition to loading
+        transitionTo(STATES.LOADING);
+
+        // POST to backend to initiate checkout
+        const response = await fetch(BACKEND_URL + '/api/checkout/initiate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            cart: cartData,
+            total: grandTotal.toFixed(2),
+            method: method,
+            reservation_id: reservationId
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`Backend error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('✅ Checkout initiated:', data);
+
+        // Start polling for admin response
+        startPolling(reservationId);
+      } catch (err) {
+        console.error('❌ Error initiating checkout:', err);
+        alert('Failed to initiate payment. Please try again.');
+        transitionTo(STATES.METHOD_SELECTION);
+      }
+    }
+
+    // ── START POLLING FOR ADMIN RESPONSE ───────────────────
+    function startPolling(reservationId) {
+      let pollCount = 0;
+      const maxPolls = 60; // Max 60 polls = 60 seconds with 1s interval
+      
+      pollingInterval = setInterval(async () => {
+        pollCount++;
+
+        try {
+          const response = await fetch(BACKEND_URL + `/api/checkout/status/${reservationId}`);
+          
+          if (!response.ok) {
+            throw new Error(`Backend error: ${response.status}`);
+          }
+
+          const data = await response.json();
+          console.log(`📊 Poll #${pollCount}:`, data.status);
+
+          // Check if admin has responded
+          if (data.status === 'ADMIN_RESPONSE_RECEIVED' && data.targetTag) {
+            stopPolling();
+            adminPaymentData = {
+              targetTag: data.targetTag,
+              referenceId: data.referenceId
+            };
+            console.log('✅ Admin payment data received:', adminPaymentData);
+            transitionTo(STATES.PAYMENT_DETAILS);
+          }
+        } catch (err) {
+          console.error('❌ Polling error:', err);
+        }
+
+        // Timeout after max polls
+        if (pollCount >= maxPolls) {
+          stopPolling();
+          alert('Payment setup timed out. Please try again.');
+          transitionTo(STATES.METHOD_SELECTION);
+        }
+      }, 1000); // Poll every 1 second
+    }
+
+    // ── STOP POLLING ──────────────────────────────────────
+    function stopPolling() {
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+        pollingInterval = null;
+      }
+    }
+
+    // ── COMPLETE PURCHASE ─────────────────────────────────
+    async function completePurchase() {
+      const fileInput = document.getElementById('proofInput');
+      if (!fileInput.files || fileInput.files.length === 0) {
+        alert('Please upload proof of payment');
+        return;
+      }
+
+      stopPolling();
+      const nextBtn = document.getElementById('nextBtn');
+      const originalText = nextBtn.textContent;
+      nextBtn.textContent = 'Uploading...';
+      nextBtn.disabled = true;
+
+      try {
+        const formData = new FormData();
+        formData.append('reservation_id', currentReservationId);
+        formData.append('proof', fileInput.files[0]);
+
+        const response = await fetch(BACKEND_URL + '/api/checkout/upload-proof', {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) throw new Error(data.error || 'Upload failed');
+
+        // Clear cart and redirect
+        localStorage.removeItem('concertCart');
+        localStorage.removeItem('concertQuantity');
+        localStorage.removeItem('selectedPaymentMethod');
+        
+        alert('Payment proof received!\n\nYour order has been submitted for verification.\nCheck your email for confirmation.\n\nOrder ID: ' + currentReservationId);
+        window.location.href = 'tickets-vegas.html';
+
+      } catch (err) {
+        console.error('Upload error:', err);
+        alert('Failed to upload proof. Please try again.');
+        nextBtn.textContent = originalText;
+        nextBtn.disabled = false;
+      }
+    }
+
+    // ── GO BACK ───────────────────────────────────────────
+    function goBack() {
+      stopPolling();
+      if (confirm('Discard cart and return to tickets?')) {
+        localStorage.removeItem('concertCart');
+        localStorage.removeItem('concertQuantity');
+        localStorage.removeItem('selectedPaymentMethod');
+        window.location.href = 'tickets-vegas.html';
+      }
+    }
+  </script>
+</body>
+</html>

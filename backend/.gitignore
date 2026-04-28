@@ -1,0 +1,34 @@
+# Environment variables (NEVER commit!)
+.env
+.env.local
+.env.*.local
+
+# Node modules
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Uploads (files uploaded by users - may contain sensitive data)
+uploads/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+dist/
+build/
+.next/
+out/
+
+# Logs
+logs/
+*.log

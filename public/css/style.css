@@ -1,0 +1,755 @@
+/* --- 1. FONTS & VARIABLES --- */
+@font-face {
+    font-family: 'bebas';
+    src: url('fonts/BebasNeue.eot');
+    src: url('fonts/BebasNeue.eot?#iefix') format("embedded-opentype"), 
+         url('fonts/BebasNeue.woff2') format("woff2"), 
+         url('fonts/BebasNeue.woff') format("woff"), 
+         url('fonts/BebasNeue.ttf') format("truetype");
+}
+
+:root {
+    --bg-color: #eaddc3; 
+    --header-bg: #3f3a2c; 
+    --text-main: #44432b; 
+    --accent-color: #b56b40; 
+    --font-heading: 'bebas', Impact, sans-serif; 
+    --font-typewriter: 'Special Elite', monospace; 
+    --font-handwriting: 'Caveat', cursive; 
+}
+
+/* --- 2. GLOBAL RESETS --- */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-image: url('../img/bg.jpg');
+    color: var(--text-main);
+    font-family: var(--font-typewriter);
+    text-align: center;
+    overflow-x: hidden; /* CRITICAL: Stops the page from scrolling sideways on mobile */
+}
+
+/* --- 3. HEADER & NAVIGATION --- */
+header {
+    background-image: url('../img/bg-header.png'); 
+    background-position: bottom left; 
+    background-repeat: repeat-x; 
+    background-size: auto; 
+    padding: 1.25rem 1.25rem 2rem 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 998;
+    gap: 1rem;
+}
+
+.logo {
+    background-image: url('../img/logo.svg'); 
+    background-size: contain; 
+    background-repeat: no-repeat;
+    background-position: left center;
+    width: 8rem;
+    height: 2.5rem;
+    z-index: 999; 
+    color: transparent; 
+    font-family: var(--font-heading);
+    font-size: 1.75rem;
+    flex-shrink: 0;
+}
+
+#nav-trigger {
+    width: 2.75rem;
+    height: 1.75rem;
+    background-image: url('../img/Nav-Icon.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    cursor: pointer;
+    z-index: 999;
+    border: none;
+    background-color: transparent;
+    padding: 0;
+    flex-shrink: 0;
+}
+
+#nav-trigger span {
+    display: none;
+}
+
+#nav-trigger.open {
+    background-image: url('../img/Nav-Close.png'); 
+}
+
+/* --- 4. HERO SECTION --- */
+.hero {
+    padding: 2rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.album-cover-container {
+    width: 100%;
+    max-width: 20rem;
+    padding: 0.3rem;
+    box-shadow: 0 0.625rem 1.25rem rgba(0, 0, 0, 0.1);
+    flex-shrink: 0;
+}
+
+.album-cover-container img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.wordmark {
+    width: 90%; 
+    max-width: 18rem;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.wordmark img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* --- 5. PROMO SECTION --- */
+.promo-section {
+    padding: 2.5rem 1.25rem;
+    text-align: center;
+    text-transform: uppercase;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.new-album-text {
+    font-size: 1.25rem;
+    letter-spacing: 0.125rem;
+    margin: 0;
+}
+
+.out-now-text {
+    font-family: var(--font-heading); 
+    font-size: 3.5rem;
+    line-height: 1.1;
+    padding: 0 1rem;
+    color: var(--header-bg);
+    margin: 0;
+    position: relative;
+}
+
+.out-now-text::after {
+    content: ""; 
+    display: block;
+    background: url('../img/ITP_Scribble.png') no-repeat center;
+    height: 3rem;
+    background-size: contain;
+    background-position: center bottom;
+    margin-top: -1.5rem;
+}
+
+/* --- 6. BUTTONS --- */
+.btn {
+    display: inline-block;
+    background-image: url('../img/ITP_Button-Stroke-Sm.png');
+    background-size: 100% 100%; 
+    background-repeat: no-repeat;
+    background-position: center;
+    background-color: transparent; 
+    color: #f6e7c2; 
+    font-family: var(--font-heading);
+    font-size: 1.875rem;
+    padding: 1.125rem 3.75rem; 
+    text-decoration: none;
+    border: none;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 0.2s linear;
+    min-width: 12rem;
+}
+
+.btn:hover {
+    background-image: url('../img/ITP_Button-Stroke-Sm-hover.png');
+    color: #f6e7c2;
+}
+
+.btn-small {
+    font-size: 1.25rem;
+    padding: 0.625rem 1.875rem;
+    min-width: auto;
+}
+
+/* --- 7. STORE SECTION --- */
+.store-section {
+    padding: 2.5rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+}
+
+.product {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.product img {
+    width: 100%;
+    max-width: 16rem;
+    height: auto;
+    display: block;
+}
+
+.product-title {
+    font-family: var(--font-heading);
+    font-size: 2rem;
+    margin: 0;
+}
+
+.buy-now-text {
+    font-size: 1.125rem;
+    text-decoration: none;
+    color: var(--text-main);
+    font-weight: bold;
+    letter-spacing: 0.0625rem;
+    cursor: pointer;
+}
+
+/* --- 8. TOUR SECTION --- */
+.tour-section {
+    padding: 2.5rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.tour-header {
+    font-family: var(--font-heading);
+    font-size: 3.125rem;
+    margin-bottom: 2rem;
+    position: relative;
+    display: inline-block;
+    align-self: center;
+    z-index: 1;
+}
+
+.tour-header::after {
+    content: '';
+    position: absolute;
+    bottom: -1rem;
+    left: -25%;
+    width: 150%;
+    height: 3.75rem;
+    background-image: url('../img/ITP_Stroke-4.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    z-index: -1;
+}
+
+.tour-date {
+    border-bottom: 0.125rem solid rgba(0, 0, 0, 0.1);
+    border-top: 0.125rem solid rgba(0, 0, 0, 0.1);
+    padding: 1.875rem 0;
+    margin-bottom: -0.125rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.tour-date h3 {
+    font-family: var(--font-heading);
+    font-size: 1.75rem;
+    margin: 0;
+}
+
+.tour-date p.venue {
+    font-family: var(--font-heading);
+    font-size: 1.5rem;
+    margin: 0;
+    line-height: 1.3;
+}
+
+.tour-date p.support {
+    font-size: 0.875rem;
+    color: var(--accent-color);
+    margin: 0;
+    font-weight: bold;
+    text-align: center;
+}
+
+/* --- 9. RESPONSIVE MEDIA QUERIES --- */
+
+/* For Small Tablets (481px to 768px) */
+@media (min-width: 30rem) {
+    .out-now-text {
+        font-size: 4.5rem;
+        padding: 0 2rem;
+    }
+    
+    .tour-header {
+        font-size: 3.75rem;
+    }
+    
+    .tour-date h3 {
+        font-size: 2rem;
+    }
+    
+    .tour-date p.venue {
+        font-size: 1.75rem;
+    }
+}
+
+/* For Medium Tablets (769px to 1024px) */
+@media (min-width: 48rem) {
+    header {
+        padding: 1.5rem 2rem 2.5rem 2rem;
+    }
+    
+    .logo {
+        width: 10rem;
+        height: 3rem;
+        font-size: 2rem;
+    }
+    
+    #nav-trigger {
+        width: 3.5rem;
+        height: 2.5rem;
+    }
+    
+    .hero {
+        padding: 3rem 2rem;
+    }
+    
+    .album-cover-container {
+        max-width: 25rem;
+    }
+    
+    .wordmark {
+        max-width: 20rem;
+    }
+    
+    .promo-section {
+        padding: 3rem 2rem;
+    }
+    
+    .out-now-text {
+        font-size: 5.5rem;
+    }
+    
+    .store-section {
+        padding: 3rem 2rem;
+        flex-direction: row;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 2rem;
+    }
+    
+    .product {
+        flex: 0 1 calc(33.333% - 1.5rem);
+        max-width: 16rem;
+    }
+    
+    .tour-section {
+        padding: 3rem 2rem;
+    }
+    
+    .tour-header {
+        font-size: 4.5rem;
+        margin-bottom: 3rem;
+    }
+    
+    .tour-date {
+        padding: 2rem 0;
+    }
+}
+
+/* For Desktops (1025px and up) */
+@media (min-width: 64rem) {
+    header {
+        padding: 2rem 3rem 3rem 3rem;
+    }
+    
+    .logo {
+        width: 11rem;
+        height: 3.5rem;
+        font-size: 2.25rem;
+    }
+    
+    #nav-trigger {
+        width: 4rem;
+        height: 3rem;
+    }
+    
+    .hero {
+        padding: 4rem 3rem;
+        gap: 2rem;
+    }
+    
+    .album-cover-container {
+        max-width: 30rem;
+    }
+    
+    .promo-section {
+        padding: 4rem 3rem;
+        gap: 1.5rem;
+    }
+    
+    .out-now-text {
+        font-size: 6.5rem;
+    }
+    
+    .store-section {
+        padding: 4rem 3rem;
+    }
+    
+    .product {
+        flex: 0 1 calc(33.333% - 2rem);
+        max-width: 20rem;
+    }
+    
+    .tour-section {
+        padding: 4rem 3rem;
+    }
+    
+    .tour-header {
+        font-size: 5rem;
+        margin-bottom: 3.5rem;
+    }
+    
+    .tour-date {
+        padding: 2.5rem 0;
+    }
+    
+    .about-section {
+        padding: 4rem 3rem;
+        gap: 3rem;
+    }
+    
+    .about-header {
+        font-size: 5rem;
+    }
+    
+    .about-images {
+        max-width: 40rem;
+        gap: 2rem;
+    }
+    
+    .about-text {
+        max-width: 40rem;
+    }
+    
+    .about-text p {
+        font-size: 1rem;
+    }
+    
+    footer {
+        padding: 4rem 3rem;
+    }
+    
+    .footer-content {
+        max-width: 40rem;
+        gap: 2.5rem;
+    }
+    
+    .footer-text p {
+        font-size: 1rem;
+    }
+}
+
+/* --- 10. ABOUT SECTION --- */
+.about-section {
+    padding: 2.5rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+}
+
+.about-header {
+    font-family: var(--font-heading);
+    font-size: 3.125rem;
+    margin: 0;
+    position: relative;
+    display: inline-block;
+    z-index: 1;
+}
+
+.about-header::after {
+    content: '';
+    position: absolute;
+    bottom: -1rem;
+    left: -25%;
+    width: 150%;
+    height: 3.75rem;
+    background-image: url('../img/ITP_Stroke-4.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    z-index: -1;
+}
+
+.about-images {
+    width: 100%;
+    max-width: 20rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-top: 1rem;
+}
+
+.about-image {
+    width: 100%;
+    border: 0.5rem solid rgba(255, 255, 255, 0.8);
+    box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.2);
+    transform: rotate(-2deg);
+}
+
+.about-image:nth-child(2) {
+    transform: rotate(2deg);
+}
+
+.about-image img {
+    width: 100%;
+    height: auto;
+    display: block;
+    background-color: #ccc;
+    min-height: 12rem;
+}
+
+.about-text {
+    width: 100%;
+    max-width: 22rem;
+    text-align: left;
+    margin-top: 1rem;
+}
+
+.about-text p {
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    margin: 0;
+    color: var(--text-main);
+}
+
+.about-text em {
+    font-style: italic;
+    color: var(--accent-color);
+    font-weight: bold;
+}
+
+/* --- 11. FOOTER SECTION --- */
+footer {
+    background-color: var(--header-bg);
+    color: var(--bg-color);
+    padding: 2.5rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    text-align: center;
+}
+
+.footer-content {
+    width: 100%;
+    max-width: 24rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    align-items: center;
+}
+
+.footer-text p {
+    font-size: 0.875rem;
+    line-height: 1.6;
+    margin: 0;
+    color: var(--bg-color);
+    text-align: center;
+}
+
+.footer-links {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.footer-link {
+    color: var(--bg-color);
+    text-decoration: underline;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.footer-link:hover {
+    color: var(--accent-color);
+}
+
+.footer-divider {
+    color: var(--bg-color);
+    margin: 0 0.25rem;
+}
+
+.footer-copyright p {
+    font-size: 0.8125rem;
+    margin: 0;
+    color: var(--bg-color);
+    opacity: 0.9;
+}
+
+/* --- 12. RESPONSIVE MEDIA QUERIES (UPDATED) --- */
+
+/* For Small Tablets (481px to 768px) */
+@media (min-width: 30rem) {
+    .out-now-text {
+        font-size: 4.5rem;
+        padding: 0 2rem;
+    }
+    
+    .tour-header {
+        font-size: 3.75rem;
+    }
+    
+    .tour-date h3 {
+        font-size: 2rem;
+    }
+    
+    .tour-date p.venue {
+        font-size: 1.75rem;
+    }
+    
+    .about-header {
+        font-size: 3.75rem;
+    }
+    
+    .about-images {
+        max-width: 24rem;
+        flex-direction: row;
+        gap: 1rem;
+    }
+    
+    .about-text {
+        max-width: 26rem;
+    }
+    
+    .about-text p {
+        font-size: 0.9375rem;
+    }
+    
+    footer {
+        padding: 3rem 2rem;
+    }
+    
+    .footer-content {
+        max-width: 28rem;
+        gap: 2rem;
+    }
+    
+    .footer-text p {
+        font-size: 0.9375rem;
+    }
+}
+
+/* For Medium Tablets (769px to 1024px) */
+@media (min-width: 48rem) {
+    header {
+        padding: 1.5rem 2rem 2.5rem 2rem;
+    }
+    
+    .logo {
+        width: 10rem;
+        height: 3rem;
+        font-size: 2rem;
+    }
+    
+    #nav-trigger {
+        width: 3.5rem;
+        height: 2.5rem;
+    }
+    
+    .hero {
+        padding: 3rem 2rem;
+    }
+    
+    .album-cover-container {
+        max-width: 25rem;
+    }
+    
+    .wordmark {
+        max-width: 20rem;
+    }
+    
+    .promo-section {
+        padding: 3rem 2rem;
+    }
+    
+    .out-now-text {
+        font-size: 5.5rem;
+    }
+    
+    .store-section {
+        padding: 3rem 2rem;
+        flex-direction: row;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 2rem;
+    }
+    
+    .product {
+        flex: 0 1 calc(33.333% - 1.5rem);
+        max-width: 16rem;
+    }
+    
+    .tour-section {
+        padding: 3rem 2rem;
+    }
+    
+    .tour-header {
+        font-size: 4.5rem;
+        margin-bottom: 3rem;
+    }
+    
+    .tour-date {
+        padding: 2rem 0;
+    }
+    
+    .about-section {
+        padding: 3rem 2rem;
+        gap: 2.5rem;
+    }
+    
+    .about-header {
+        font-size: 4.5rem;
+    }
+    
+    .about-images {
+        max-width: 32rem;
+    }
+    
+    .about-text {
+        max-width: 32rem;
+    }
+    
+    .footer-content {
+        max-width: 32rem;
+        gap: 2rem;
+    }
+}
+
+/* For Desktops (1025px and up) */

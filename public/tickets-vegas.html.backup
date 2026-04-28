@@ -1,0 +1,2064 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Concert Tickets | Seat Selection</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --blue-dark: #0a2a6e;
+    --blue-mid: #1a4fc4;
+    --blue-light: #4a90e2;
+    --blue-pale: #a8c8f0;
+    --blue-ghost: #d6e8fa;
+    --bg: #f0f2f5;
+    --white: #ffffff;
+    --text: #111111;
+    --text-muted: #666666;
+    --accent: #1a4fc4;
+    --font: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    max-width: 430px;
+    margin: 0 auto;
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+    /* FIX: Prevents the checkout bar from covering the last ticket */
+    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+    /* FIX: Removes ugly blue tap highlight on mobile */
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* EVENT HEADER */
+  .event-header {
+    background: #000;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #ebebeb;
+    color: #fff;
+  }
+  .event-info h1 { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; }
+  .event-meta { font-size: 12px; color: var(--white); margin-top: 3px; }
+  .event-meta strong { color: var(--white); }
+  .avatar {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    background: var(--blue-dark);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  /* FILTER BAR */
+  .filter-bar {
+    background: var(--white);
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid #ebebeb;
+  }
+  .filter-icon {
+    width: 34px; height: 34px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--white);
+    flex-shrink: 0;
+  }
+  .price-pill {
+    flex: 1;
+    background: var(--white);
+    border: 1px solid #ccc;
+    border-radius: 20px;
+    padding: 7px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    display: flex; align-items: center; gap: 6px;
+    cursor: pointer;
+  }
+  .price-pill span { color: var(--text-muted); font-size: 10px; }
+  .ticket-types-btn {
+    background: var(--white);
+    border: 1px solid #ccc;
+    border-radius: 20px;
+    padding: 7px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  /* STADIUM MAP AREA */
+  .map-container {
+    background: #1a1f2e;
+    position: relative;
+    width: calc(100% - 32px);
+    height: auto;
+    aspect-ratio: 4 / 3;
+    max-height: 280px;
+    overflow: hidden;
+    margin: 16px 16px;
+    padding: 0;
+    box-sizing: border-box;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1;
+    flex-shrink: 0;
+    display: block;
+  }
+  .stadium-svg {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0; left: 0;
+    display: block;
+  }
+
+  /* Thumbnail preview */
+  .map-thumbnail {
+    position: absolute;
+    bottom: 14px;
+    left: 14px;
+    width: 72px;
+    height: 52px;
+    background: var(--blue-dark);
+    border-radius: 8px;
+    overflow: hidden;
+    border: 2px solid rgba(255,255,255,0.3);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 10;
+  }
+  .map-thumbnail svg { width: 58px; height: 42px; }
+
+  /* Map toggle */
+  .map-toggle {
+    position: absolute;
+    bottom: 14px;
+    right: 14px;
+    width: 42px; height: 42px;
+    background: var(--white);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    z-index: 10;
+    cursor: pointer;
+    font-size: 18px;
+  }
+
+  /* INFO BANNER */
+  .info-banner {
+    background: #e8f2ff;
+    border-top: 1px solid #c8dcf5;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #1a4fc4;
+    margin: 12px 16px 0;
+    border-radius: 8px;
+  }
+  
+  /* Section divider between map and bottom sheet */
+  .map-container::after {
+    content: '';
+    display: block;
+    height: 12px;
+    background: #f0f2f5;
+  }
+  .info-banner-icon {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: var(--blue-mid);
+    color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  /* BOTTOM SHEET */
+  .bottom-sheet {
+    background: var(--white);
+    border-radius: 16px 16px 0 0;
+    margin-top: 20px;
+    min-height: 200px;
+    box-shadow: 0 -2px 20px rgba(0,0,0,0.08);
+    position: relative;
+    z-index: 999;
+  }
+  .sheet-handle {
+    width: 36px; height: 4px;
+    background: #ccc;
+    border-radius: 2px;
+    margin: 10px auto 0;
+  }
+  .sheet-content {
+    padding: 24px 20px 40px;
+    text-align: center;
+  }
+  .sheet-content h2 {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 6px;
+  }
+  .sheet-content p {
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  /* Ticket list (shown when section selected) */
+  .ticket-list { display: none; padding: 0 16px 40px; text-align: left; }
+  .ticket-list.active { display: block; }
+  .ticket-item {
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s, transform 0.1s;
+    background: var(--white);
+  }
+  .ticket-item:hover, .ticket-item.active { border-color: var(--blue-mid); background: #f0f6ff; }
+  .ticket-item:active { transform: scale(0.98); }
+  .ticket-item-left {}
+  .ticket-section { font-size: 11px; color: var(--text-muted); margin-bottom: 2px; }
+  .ticket-desc { font-size: 14px; font-weight: 600; }
+  .ticket-avail { font-size: 11px; color: #4caf50; margin-top: 2px; }
+  .ticket-price { font-size: 16px; font-weight: 700; color: var(--blue-dark); }
+  .sheet-title-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 16px 16px 10px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .back-btn {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: #f0f0f0;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 14px;
+    border: none;
+    flex-shrink: 0;
+  }
+  .sheet-section-name { font-size: 15px; font-weight: 700; }
+
+  /* Purchase button and summary */
+  .purchase-btn {
+    background: var(--blue-dark);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 14px 20px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    width: calc(100% - 40px);
+    margin: 0 20px 20px;
+    transition: background 0.2s;
+  }
+  .purchase-btn:hover { background: var(--blue-mid); }
+  .purchase-btn:disabled { background: #ccc; cursor: not-allowed; opacity: 0.6; }
+  .purchase-summary {
+    padding: 12px 20px;
+    background: #f0f6ff;
+    border-top: 1px solid #c8dcf5;
+    border-bottom: 1px solid #c8dcf5;
+    margin-bottom: 16px;
+  }
+  .purchase-summary-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    font-size: 14px;
+  }
+  .purchase-summary-row.total {
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--blue-dark);
+    border-top: 1px solid #c8dcf5;
+    padding-top: 8px;
+    margin-top: 8px;
+  }
+
+  /* Home indicator */
+  .home-indicator {
+    position: fixed;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px; height: 5px;
+    background: #000;
+    border-radius: 3px;
+    opacity: 0.2;
+  }
+
+  /* Tooltip on map */
+  .map-tooltip {
+    position: absolute;
+    background: var(--blue-dark);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 6px;
+    pointer-events: none;
+    white-space: nowrap;
+    z-index: 20;
+    opacity: 0;
+    transition: opacity 0.15s;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  .map-tooltip.show { opacity: 1; }
+  
+  /* ============================================
+     DESKTOP LAYOUT (768px+)
+  ============================================ */
+  @media (min-width: 768px) {
+    body {
+      max-width: 100%;
+      background: #f5f5f5;
+      overflow-x: hidden;
+      padding-bottom: 0; /* Reset for desktop */
+    }
+
+    /* Hide mobile-only elements */
+    .home-indicator { display: none; }
+    .filter-bar { display: none; }
+
+    /* TOP NAV BAR */
+    .desktop-nav {
+      display: flex;
+      align-items: center;
+      background: #fff;
+      border-bottom: 1px solid #e0e0e0;
+      padding: 0 24px;
+      height: 56px;
+      gap: 32px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .desktop-nav .logo {
+      font-size: 22px;
+      font-weight: 700;
+      color: #026cdf;
+      letter-spacing: -0.5px;
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      text-decoration: none;
+      flex-shrink: 0;
+    }
+    .desktop-nav .nav-links {
+      display: flex;
+      gap: 24px;
+      align-items: center;
+    }
+    .desktop-nav .nav-links a {
+      font-size: 14px;
+      color: #333;
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .desktop-nav .nav-links a:hover { color: #026cdf; }
+    .desktop-nav .nav-right {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .desktop-nav .nav-right .sign-in {
+      font-size: 14px;
+      font-weight: 600;
+      color: #026cdf;
+      cursor: pointer;
+      border: none;
+      background: none;
+    }
+
+    /* BREADCRUMB */
+    .desktop-breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 12px 24px;
+      font-size: 13px;
+      color: #666;
+      background: #fff;
+      border-bottom: 1px solid #ebebeb;
+    }
+    .desktop-breadcrumb a { color: #026cdf; text-decoration: none; }
+    .desktop-breadcrumb a:hover { text-decoration: underline; }
+    .desktop-breadcrumb span { color: #999; }
+
+    /* EVENT HEADER – desktop override */
+    .event-header {
+      background: #000;
+      padding: 20px 24px 16px;
+      border-bottom: 1px solid #ebebeb;
+      display: block;
+      color: #fff;
+    }
+    .event-header .desktop-event-top {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+    }
+    .event-header .event-thumb {
+      width: 60px;
+      height: 60px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #0d1b4b, #1a3a8f);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 28px;
+    }
+    .event-header .event-title-block h1 {
+      font-size: 22px;
+      font-weight: 700;
+      line-height: 1.2;
+      color: #111;
+    }
+    .event-header .event-title-block .event-date {
+      font-size: 14px;
+      color: #555;
+      margin-top: 4px;
+    }
+    .event-header .event-title-block .event-venue {
+      font-size: 14px;
+      color: #026cdf;
+      margin-top: 2px;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+    .event-header .desktop-more-info {
+      margin-left: auto;
+      border: 1.5px solid #333;
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      flex-shrink: 0;
+      align-self: flex-start;
+      margin-top: 4px;
+    }
+    .event-header .avatar { display: none; }
+    .event-info h1 { display: none; }
+    .event-info .event-meta { display: none; }
+
+    /* IMPORTANT INFO BANNER */
+    .desktop-important-info {
+      display: block;
+      background: #fff;
+      border-top: 1px solid #ebebeb;
+      padding: 10px 24px;
+      font-size: 12.5px;
+      color: #333;
+    }
+    .desktop-important-info strong { font-weight: 700; }
+
+    /* MAIN CONTENT AREA – 2 column */
+    .desktop-main {
+      display: flex;
+      min-height: calc(100vh - 180px);
+      background: #f5f5f5;
+    }
+
+    /* LEFT PANEL – Date sidebar */
+    .desktop-sidebar {
+      display: block;
+      width: 200px;
+      flex-shrink: 0;
+      background: #fff;
+      border-right: 1px solid #e0e0e0;
+      padding: 0;
+    }
+    .desktop-sidebar .sidebar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      border-bottom: 1px solid #ebebeb;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .desktop-sidebar .sidebar-header .chevron {
+      font-size: 18px;
+      cursor: pointer;
+      color: #666;
+    }
+    .desktop-sidebar .date-item {
+      padding: 14px 16px;
+      border-bottom: 1px solid #f0f0f0;
+      cursor: pointer;
+    }
+    .desktop-sidebar .date-item:hover { background: #f8f9fa; }
+    .desktop-sidebar .date-item.active { background: #e8f0fd; border-left: 3px solid #026cdf; }
+    .desktop-sidebar .date-item .date-label { font-size: 13px; font-weight: 600; color: #111; }
+    .desktop-sidebar .date-item .date-day { font-size: 12px; color: #888; }
+    .desktop-sidebar .date-item .date-time-btn {
+      display: inline-block;
+      margin-top: 8px;
+      background: #026cdf;
+      color: #fff;
+      border-radius: 6px;
+      padding: 5px 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .desktop-sidebar .date-item.active .date-time-btn {
+      background: #026cdf;
+    }
+    .desktop-sidebar .date-item:not(.active) .date-time-btn {
+      background: transparent;
+      color: #026cdf;
+      border: 1.5px solid #026cdf;
+    }
+
+    /* CENTER PANEL – Map */
+    .desktop-map-panel {
+      display: block;
+      flex: 1;
+      min-width: 0;
+      background: #fff;
+    }
+    .desktop-map-panel .map-header {
+      padding: 14px 20px 12px;
+      border-bottom: 1px solid #ebebeb;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .desktop-map-panel .map-header .map-title {
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .desktop-map-panel .map-header .map-controls {
+      display: flex;
+      gap: 8px;
+    }
+    .desktop-map-panel .map-header .map-controls button {
+      width: 32px;
+      height: 32px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      background: #fff;
+      cursor: pointer;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .desktop-map-panel .map-header .map-controls button:hover { background: #f5f5f5; }
+
+    /* Override mobile map container for desktop */
+    .map-container {
+      height: 480px !important;
+      background: #1a1f2e;
+    }
+
+    /* Desktop map legend */
+    .desktop-map-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding: 12px 20px;
+      border-top: 1px solid #ebebeb;
+      background: #fafafa;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: #444;
+    }
+    .legend-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+
+    /* RIGHT PANEL – Tickets */
+    .desktop-ticket-panel {
+      display: block;
+      width: 420px;
+      flex-shrink: 0;
+      border-left: 1px solid #e0e0e0;
+      background: #fff;
+      overflow-y: auto;
+      max-height: calc(100vh - 130px);
+      position: sticky;
+      top: 56px;
+    }
+
+    /* Ticket panel filters */
+    .ticket-panel-filters {
+      padding: 14px 16px;
+      border-bottom: 1px solid #ebebeb;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .ticket-qty-select {
+      flex: 1;
+      border: 1.5px solid #ccc;
+      border-radius: 8px;
+      padding: 9px 12px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #fff;
+    }
+    .ticket-qty-select svg { opacity: 0.5; }
+    .ticket-filter-btn {
+      border: 1.5px solid #ccc;
+      border-radius: 8px;
+      padding: 9px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      background: #fff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    /* Price range row */
+    .ticket-price-range {
+      padding: 10px 16px;
+      border-bottom: 1px solid #ebebeb;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .price-range-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: #111;
+      min-width: 38px;
+    }
+    .price-range-slider {
+      flex: 1;
+      height: 4px;
+      background: #026cdf;
+      border-radius: 2px;
+      position: relative;
+    }
+    .price-range-slider::before {
+      content: '';
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      background: #fff;
+      border: 2px solid #026cdf;
+      position: absolute;
+      left: 0; top: 50%;
+      transform: translateY(-50%);
+    }
+    .price-range-slider::after {
+      content: '';
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      background: #fff;
+      border: 2px solid #026cdf;
+      position: absolute;
+      right: 0; top: 50%;
+      transform: translateY(-50%);
+    }
+    .price-max-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: #111;
+      min-width: 50px;
+      text-align: right;
+    }
+
+    /* Sort tabs */
+    .ticket-sort-tabs {
+      display: flex;
+      border-bottom: 2px solid #ebebeb;
+    }
+    .sort-tab {
+      flex: 1;
+      padding: 12px;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      color: #666;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+    }
+    .sort-tab.active {
+      color: #026cdf;
+      border-bottom-color: #026cdf;
+    }
+
+    /* We're All In banner */
+    .wai-banner {
+      padding: 10px 16px;
+      border-bottom: 1px solid #ebebeb;
+      font-size: 12.5px;
+      color: #444;
+      background: #fafafa;
+    }
+    .wai-banner strong { color: #111; }
+
+    /* VIP Packages */
+    .vip-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-bottom: 3px solid #f0c040;
+      cursor: pointer;
+    }
+    .vip-row:hover { background: #fffdf0; }
+    .vip-row .vip-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .vip-row .vip-star { color: #f0c040; font-size: 18px; }
+    .vip-row .vip-label { font-size: 14px; font-weight: 700; }
+    .vip-row .vip-more { font-size: 13px; color: #026cdf; font-weight: 600; }
+
+    /* Desktop ticket items */
+    .desktop-ticket-item {
+      display: flex;
+      align-items: center;
+      padding: 14px 16px;
+      border-bottom: 1px solid #f0f0f0;
+      cursor: pointer;
+      gap: 12px;
+      transition: background 0.12s;
+    }
+    .desktop-ticket-item:hover { background: #f8f9ff; }
+    .desktop-ticket-item.selected { background: #edf3ff; border-left: 3px solid #026cdf; }
+    .desktop-ticket-item .ticket-thumb {
+      width: 48px;
+      height: 38px;
+      border-radius: 6px;
+      background: #e8edf5;
+      flex-shrink: 0;
+      overflow: hidden;
+      position: relative;
+    }
+    .desktop-ticket-item .ticket-thumb svg {
+      width: 100%;
+      height: 100%;
+    }
+    .desktop-ticket-item .ticket-info { flex: 1; min-width: 0; }
+    .desktop-ticket-item .ticket-section-label {
+      font-size: 14px;
+      font-weight: 700;
+      color: #111;
+    }
+    .desktop-ticket-item .ticket-desc-small {
+      font-size: 12px;
+      color: #777;
+      margin-top: 2px;
+    }
+    .desktop-ticket-item .ticket-price-right {
+      font-size: 16px;
+      font-weight: 700;
+      color: #111;
+      flex-shrink: 0;
+    }
+
+    /* Mobile elements hidden on desktop */
+    .bottom-sheet { display: none !important; }
+    .map-toggle { display: none !important; }
+    .info-banner { display: none !important; }
+
+    /* Desktop-only layout wrapper */
+    .desktop-layout-wrapper {
+      display: flex;
+      flex-direction: column;
+    }
+    .desktop-content-row {
+      display: flex;
+      flex: 1;
+    }
+    .desktop-center-col {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+    }
+  }
+
+  /* Hide desktop elements on mobile */
+  @media (max-width: 767px) {
+    .desktop-nav,
+    .desktop-breadcrumb,
+    .desktop-important-info,
+    .desktop-sidebar,
+    .desktop-ticket-panel,
+    .desktop-map-legend,
+    .desktop-layout-wrapper,
+    .desktop-event-top,
+    .desktop-more-info,
+    .desktop-main,
+    .desktop-content-row,
+    .desktop-center-col {
+      display: none !important;
+    }
+    
+    /* FIX: Sticky header for mobile */
+    .event-header { 
+      position: sticky !important;
+      top: 0;
+      z-index: 50;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    
+
+.map-container {
+    margin: 0 !important;
+    border-radius: 0 !important;
+    width: 100% !important;
+    height: 0 !important; /* Force collapse to padding */
+    padding-bottom: calc(20% + 200px) !important; /* Map 4:3 ratio + bottom-sheet height */ /* Forces perfect 4:3 ratio based on width */
+    max-height: none !important;
+    position: relative !important;
+    overflow: visible !important;
+  }
+  
+  .bottom-sheet {
+    box-shadow: 0 -4px 12px rgba(0,0,0,0.08) !important; 
+    border-top: 1px solid #e8e8e8;
+    margin-top: 0 !important; 
+    position: absolute !important;
+    top: 100% !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    z-index: 10 !important;
+  }
+
+    .event-header .event-info h1 { display: block; }
+    .event-header .event-info .event-meta { display: block; }
+    .event-header .avatar { display: flex; }
+  }
+
+  /* Hide mobile map on desktop (use cloned map in desktop layout instead) */
+  @media (min-width: 768px) {
+    .map-container {
+      display: none !important;
+    }
+  }
+
+  /* ============================================
+     CHECKOUT BAR STYLES - Fixed Bottom Bar
+  ============================================ */
+  #checkout-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 70px;
+    background: linear-gradient(135deg, #1a4fc4 0%, #0a2a6e 100%);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    z-index: 999;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.15);
+    transition: transform 0.3s ease;
+  }
+
+  #checkout-bar.hidden {
+    transform: translateY(100%);
+    pointer-events: none;
+  }
+
+  .checkout-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+  }
+
+  .checkout-info span {
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  #checkout-counter {
+    font-size: 18px;
+    font-weight: 700;
+    color: #ffe000;
+  }
+
+  #checkout-total {
+    font-size: 16px;
+    font-weight: 700;
+    color: #ffffff;
+  }
+
+  #checkout-pay-btn {
+    background: #ffe000;
+    color: #0a2a6e;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+  }
+
+  #checkout-pay-btn:hover {
+    background: #ffeb3b;
+    transform: scale(1.05);
+  }
+
+  #checkout-pay-btn:active {
+    transform: scale(0.98);
+  }
+
+  /* ============================================
+     SEAT PULSE ANIMATION
+  ============================================ */
+  @keyframes seat-pulse {
+    0% { filter: drop-shadow(0 0 0px #ffe000); }
+    50% { filter: drop-shadow(0 0 8px #ffe000); }
+    100% { filter: drop-shadow(0 0 0px #ffe000); }
+  }
+
+  .seat-pulse {
+    animation: seat-pulse 0.6s ease-out;
+  }
+
+
+
+</style>
+</head>
+<body>
+
+<!-- ================================================
+     DESKTOP LAYOUT (hidden on mobile via CSS)
+================================================ -->
+<div class="desktop-layout-wrapper">
+
+  <!-- TOP NAV -->
+  <nav class="desktop-nav">
+    <a class="logo" href="#">Concert Tickets</a>
+    <div class="nav-links">
+      <a href="#">Home</a>
+      <a href="#">Events</a>
+      <a href="#">Cart</a>
+      <a href="#" style="color:#026cdf;font-weight:700;">Checkout</a>
+    </div>
+    <div class="nav-right">
+      <button class="sign-in">Sign In</button>
+      <div style="width:36px;height:36px;border-radius:50%;background:#026cdf;display:flex;align-items:center;justify-content:center;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+      </div>
+    </div>
+  </nav>
+
+  <!-- BREADCRUMB -->
+  <div class="desktop-breadcrumb">
+    <a href="#">Home</a> <span>/</span>
+    <a href="#">Concert Tickets</a> <span>/</span>
+    <a href="#">Country &amp; Folk</a> <span>/</span>
+    <span style="color:#333;">Morgan Wallen</span>
+  </div>
+
+  <!-- EVENT HEADER (desktop version) -->
+  <div class="desktop-event-header" style="background:#fff;padding:20px 24px 14px;border-bottom:1px solid #ebebeb;">
+    <div style="display:flex;align-items:flex-start;gap:16px;">
+      <div style="width:64px;height:64px;border-radius:10px;background:linear-gradient(135deg,#0d1b4b,#1a4fc4);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:32px;"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg></div>
+      <div style="flex:1;">
+        <h1 style="font-size:22px;font-weight:700;color:#111;line-height:1.2;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">Morgan Wallen: Still the Problem Tour</h1>
+        <div style="font-size:14px;color:#555;margin-top:5px;">Sat · May 09, 2026 · 5:30 PM</div>
+        <div style="font-size:14px;color:#026cdf;margin-top:3px;text-decoration:underline;cursor:pointer;">Lucas Oil Stadium, Indianapolis, IN</div>
+      </div>
+      <button style="border:1.5px solid #333;border-radius:20px;padding:7px 16px;font-size:13px;font-weight:600;cursor:pointer;background:#fff;display:flex;align-items:center;gap:6px;flex-shrink:0;white-space:nowrap;margin-top:4px;">
+        <span style="width:18px;height:18px;border:1.5px solid #333;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">i</span>
+        More Info
+      </button>
+    </div>
+    <div style="margin-top:10px;font-size:12.5px;color:#444;border-top:1px solid #f0f0f0;padding-top:10px;">
+      <strong>Important Info:</strong> All individuals attending this event must have a ticket, regardless of age. Clear bag policy is enforced. <a href="#" style="color:#026cdf;">more</a>
+    </div>
+  </div>
+
+  <!-- MAIN 3-COLUMN CONTENT -->
+  <div class="desktop-main">
+
+    <!-- LEFT: Date sidebar -->
+    <div class="desktop-sidebar">
+      <div class="sidebar-header">
+        <span>More Dates</span>
+        <span class="chevron">‹</span>
+      </div>
+      <div class="date-item">
+        <div class="date-label">May 8</div>
+        <div class="date-day">Fri</div>
+        <div><span class="date-time-btn">5:30pm</span></div>
+      </div>
+      <div class="date-item active">
+        <div class="date-label">May 9</div>
+        <div class="date-day">Sat</div>
+        <div><span class="date-time-btn">5:30pm</span></div>
+      </div>
+    </div>
+
+    <!-- CENTER: Map -->
+    <div class="desktop-center-col">
+      <!-- Map header with controls -->
+      <div style="padding:12px 20px;border-bottom:1px solid #ebebeb;display:flex;align-items:center;justify-content:space-between;background:#fff;">
+        <span style="font-size:13px;font-weight:600;color:#555;">Interactive Seat Map</span>
+        <div style="display:flex;gap:8px;">
+          <button id="desktopResetBtn" title="Reset" style="width:34px;height:34px;border:1px solid #ddd;border-radius:6px;background:#fff;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg></button>
+          <button id="desktopZoomIn" title="Zoom In" style="width:34px;height:34px;border:1px solid #ddd;border-radius:6px;background:#fff;cursor:pointer;font-size:18px;font-weight:300;display:flex;align-items:center;justify-content:center;">+</button>
+          <button id="desktopZoomOut" title="Zoom Out" style="width:34px;height:34px;border:1px solid #ddd;border-radius:6px;background:#fff;cursor:pointer;font-size:18px;font-weight:300;display:flex;align-items:center;justify-content:center;">−</button>
+        </div>
+      </div>
+
+      <!-- Map will be placed here by JS clone on desktop -->
+      <div id="desktopMapMount" style="position:relative;height:480px;background:#1a1f2e;overflow:hidden;"></div>
+
+      <!-- Legend -->
+      <div class="desktop-map-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(168,200,240,0.9);"></div><span>400 Level</span></div>
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(74,144,226,0.9);"></div><span>300 Level</span></div>
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(26,79,196,0.9);"></div><span>200 Level</span></div>
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(10,42,110,0.9);"></div><span>100 Level</span></div>
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(90,90,200,0.9);"></div><span>Club</span></div>
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(29,158,117,0.9);"></div><span>Floor / PIT</span></div>
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(160,174,190,0.5);border:1px solid #ccc;"></div><span>Unavailable</span></div>
+      </div>
+
+      <!-- PayPal footer note -->
+      <div style="padding:10px 20px;font-size:11px;color:#888;border-top:1px solid #f0f0f0;background:#fafafa;display:flex;align-items:center;gap:8px;">
+        <strong style="color:#003087;font-style:italic;font-size:15px;">PayPal</strong>
+        <span>By continuing, you agree to our <a href="#" style="color:#026cdf;">terms of use</a>. | <a href="#" style="color:#026cdf;">Manage my cookies</a> | © 2026 Concert Ticketing.</span>
+      </div>
+    </div>
+
+    <!-- RIGHT: Ticket listings panel -->
+    <div class="desktop-ticket-panel" id="desktopTicketPanel">
+
+      <!-- Qty + Filter row -->
+      <div class="ticket-panel-filters">
+        <div class="ticket-qty-select">
+          <span>2 Tickets</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="ticket-filter-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
+          Filters
+        </div>
+      </div>
+
+      <!-- Price range -->
+      <div class="ticket-price-range">
+        <span class="price-range-label">$90</span>
+        <div style="flex:1;position:relative;height:4px;background:#ddd;border-radius:2px;">
+          <div style="position:absolute;left:0;right:0;height:4px;background:#026cdf;border-radius:2px;"></div>
+          <div style="position:absolute;left:-8px;top:50%;transform:translateY(-50%);width:16px;height:16px;border-radius:50%;background:#fff;border:2px solid #026cdf;"></div>
+          <div style="position:absolute;right:-8px;top:50%;transform:translateY(-50%);width:16px;height:16px;border-radius:50%;background:#fff;border:2px solid #026cdf;"></div>
+        </div>
+        <span class="price-max-label">$632+</span>
+      </div>
+
+      <!-- Sort tabs -->
+      <div class="ticket-sort-tabs">
+        <div class="sort-tab active">LOWEST PRICE</div>
+        <div class="sort-tab">BEST SEATS</div>
+      </div>
+
+      <!-- We're All In banner -->
+      <div class="wai-banner">
+        <strong>We're All In:</strong> Prices include fees (before taxes).
+      </div>
+
+      <!-- VIP packages -->
+      <div class="vip-row">
+        <div class="vip-left">
+          <span class="vip-star">★</span>
+          <span class="vip-label">VIP Packages</span>
+        </div>
+        <span class="vip-more">More Info</span>
+      </div>
+
+      <!-- Ticket list -->
+      <div id="desktopTicketList">
+        <!-- Populated dynamically -->
+      </div>
+
+    </div><!-- end ticket panel -->
+
+  </div><!-- end desktop-main -->
+
+</div><!-- end desktop-layout-wrapper -->
+
+<!-- ================================================
+     MOBILE LAYOUT (shown below, hidden on desktop)
+================================================ -->
+
+<!-- STADIUM MAP - MOVED TO TOP FOR MOBILE -->
+<div class="map-container" id="mapContainer">
+  <div class="map-tooltip" id="mapTooltip"></div>
+  <svg class="stadium-svg" viewBox="0 0 10240 7680" xmlns="http://www.w3.org/2000/svg"
+       style="width:100%;height:100%;position:absolute;top:0;left:0;background-image:url('https://mapsapi.tmol.io/maps/geometry/image/72/29/722924?removeFilters=ISM_Shadow&avertaFonts=true&app=PRD2663_EDP_NA');background-size:100% 100%;background-repeat:no-repeat;">
+    <defs>
+      <style>
+        /* Base section styles */
+        .block { cursor: pointer; stroke: rgba(255,255,255,0.5); stroke-width: 10; transition: all 0.12s; }
+        .block.is-available:hover { opacity: 0.8; stroke: #fff; stroke-width: 14; }
+        .block.sel { stroke: #ffe000 !important; stroke-width: 22 !important; opacity: 1 !important; filter: drop-shadow(0 0 6px rgba(255,224,0,0.7)); }
+
+        /* Unavailable – greyed out, no pointer */
+        .block:not(.is-available) { fill: rgba(160,174,190,0.45); cursor: default; stroke: rgba(255,255,255,0.15); }
+        .block:not(.is-available):hover { opacity: 1; }
+
+        /* 400 level – light blue */
+        .block.is-available[data-section-name="401"],.block.is-available[data-section-name="402"],.block.is-available[data-section-name="403"],.block.is-available[data-section-name="404"],.block.is-available[data-section-name="405"],.block.is-available[data-section-name="406"],.block.is-available[data-section-name="407"],.block.is-available[data-section-name="408"],.block.is-available[data-section-name="409"],.block.is-available[data-section-name="410"],.block.is-available[data-section-name="411"],.block.is-available[data-section-name="412"],.block.is-available[data-section-name="413"],.block.is-available[data-section-name="414"],.block.is-available[data-section-name="415"],.block.is-available[data-section-name="416"],.block.is-available[data-section-name="417"],.block.is-available[data-section-name="418"],.block.is-available[data-section-name="419"],.block.is-available[data-section-name="420"],.block.is-available[data-section-name="421"],.block.is-available[data-section-name="431"],.block.is-available[data-section-name="432"],.block.is-available[data-section-name="433"],.block.is-available[data-section-name="434"],.block.is-available[data-section-name="435"],.block.is-available[data-section-name="436"],.block.is-available[data-section-name="437"],.block.is-available[data-section-name="438"],.block.is-available[data-section-name="439"],.block.is-available[data-section-name="440"],.block.is-available[data-section-name="441"],.block.is-available[data-section-name="442"],.block.is-available[data-section-name="443"],.block.is-available[data-section-name="444"] { fill: rgba(168,200,240,0.82); }
+
+        /* 300 level – mid blue */
+        .block.is-available[data-section-name="303"],.block.is-available[data-section-name="304"],.block.is-available[data-section-name="305"],.block.is-available[data-section-name="306"],.block.is-available[data-section-name="307"],.block.is-available[data-section-name="308"],.block.is-available[data-section-name="309"],.block.is-available[data-section-name="310"],.block.is-available[data-section-name="311"],.block.is-available[data-section-name="312"],.block.is-available[data-section-name="313"],.block.is-available[data-section-name="314"],.block.is-available[data-section-name="315"],.block.is-available[data-section-name="316"],.block.is-available[data-section-name="317"],.block.is-available[data-section-name="318"],.block.is-available[data-section-name="319"],.block.is-available[data-section-name="320"],.block.is-available[data-section-name="330"],.block.is-available[data-section-name="331"],.block.is-available[data-section-name="332"],.block.is-available[data-section-name="333"],.block.is-available[data-section-name="334"],.block.is-available[data-section-name="335"],.block.is-available[data-section-name="336"],.block.is-available[data-section-name="337"],.block.is-available[data-section-name="338"],.block.is-available[data-section-name="339"],.block.is-available[data-section-name="340"],.block.is-available[data-section-name="341"],.block.is-available[data-section-name="342"],.block.is-available[data-section-name="343"],.block.is-available[data-section-name="344"],.block.is-available[data-section-name="345"],.block.is-available[data-section-name="346"],.block.is-available[data-section-name="347"] { fill: rgba(74,144,226,0.82); }
+
+        /* 200 level – dark blue */
+        .block.is-available[data-section-name="201"],.block.is-available[data-section-name="202"],.block.is-available[data-section-name="203"],.block.is-available[data-section-name="204"],.block.is-available[data-section-name="205"],.block.is-available[data-section-name="206"],.block.is-available[data-section-name="207"],.block.is-available[data-section-name="208"],.block.is-available[data-section-name="218"],.block.is-available[data-section-name="219"],.block.is-available[data-section-name="220"],.block.is-available[data-section-name="221"],.block.is-available[data-section-name="229"],.block.is-available[data-section-name="230"],.block.is-available[data-section-name="231"],.block.is-available[data-section-name="232"],.block.is-available[data-section-name="242"],.block.is-available[data-section-name="243"],.block.is-available[data-section-name="244"],.block.is-available[data-section-name="245"],.block.is-available[data-section-name="246"],.block.is-available[data-section-name="247"],.block.is-available[data-section-name="248"] { fill: rgba(26,79,196,0.82); }
+
+        /* 100 level – navy */
+        .block.is-available[data-section-name="101"],.block.is-available[data-section-name="102"],.block.is-available[data-section-name="103"],.block.is-available[data-section-name="104"],.block.is-available[data-section-name="105"],.block.is-available[data-section-name="106"],.block.is-available[data-section-name="107"],.block.is-available[data-section-name="108"],.block.is-available[data-section-name="117"],.block.is-available[data-section-name="118"],.block.is-available[data-section-name="119"],.block.is-available[data-section-name="127"],.block.is-available[data-section-name="128"],.block.is-available[data-section-name="129"],.block.is-available[data-section-name="130"],.block.is-available[data-section-name="138"],.block.is-available[data-section-name="139"],.block.is-available[data-section-name="140"],.block.is-available[data-section-name="141"],.block.is-available[data-section-name="142"],.block.is-available[data-section-name="143"],.block.is-available[data-section-name="144"] { fill: rgba(10,42,110,0.88); }
+
+        /* CLUB sections – purple-blue */
+        .block.is-available[data-section-name^="CLUB"] { fill: rgba(90,90,200,0.82); }
+
+        /* PIT sections – teal green */
+        .block.is-available[data-section-name^="PIT"] { fill: rgba(29,158,117,0.88); }
+
+        /* Floor sections (A/B/C) – pale with dark text */
+        .block.is-available[data-section-name^="A"],.block.is-available[data-section-name^="B"],.block.is-available[data-section-name="C3"],.block.is-available[data-section-name="C3 ADA"] { fill: rgba(220,236,255,0.88); }
+
+        /* Labels */
+        .label {
+          fill: rgba(255,255,255,0.95);
+          font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+          font-weight: 700;
+          pointer-events: none;
+          text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+        }
+      </style>
+      
+      <!-- SEAT STATUS COLORS -->
+      <style>
+        /* Seat Status Color Coding */
+        .seat {
+          fill: #a8c8f0;
+          stroke: #4a90e2;
+          stroke-width: 0.5;
+          transition: fill 0.2s ease, filter 0.2s ease;
+          cursor: pointer;
+        }
+        
+        .seat:hover:not(.sold):not(.unavailable) {
+          fill: #1a4fc4;
+          filter: drop-shadow(0 0 3px rgba(26, 79, 196, 0.6));
+        }
+        
+        .seat.selected {
+          fill: #0a2a6e;
+          stroke: #ffffff;
+          stroke-width: 1.5;
+          filter: drop-shadow(0 0 4px rgba(10, 42, 110, 0.8));
+        }
+        
+        .seat.sold {
+          fill: #d0d0d0;
+          stroke: #999;
+          cursor: not-allowed;
+          opacity: 0.6;
+        }
+        
+        .seat.unavailable {
+          fill: #e8c8c8;
+          stroke: #c0a0a0;
+          cursor: not-allowed;
+          opacity: 0.5;
+        }
+        
+        /* Custom Premium Seats (g elements) */
+        .seat.is-custom circle {
+          fill: #4a90e2;
+          stroke: #1a4fc4;
+          stroke-width: 1;
+        }
+        
+        .seat.is-custom:hover:not(.sold):not(.unavailable) circle {
+          fill: #1a4fc4;
+          filter: drop-shadow(0 0 3px rgba(26, 79, 196, 0.6));
+        }
+        
+        .seat.is-custom.selected circle {
+          fill: #0a2a6e;
+          stroke: #ffffff;
+          stroke-width: 2;
+        }
+        
+        .seat.is-custom.sold circle {
+          fill: #d0d0d0;
+          opacity: 0.6;
+        }
+      </style>
+
+      <!-- SEAT TOOLTIP -->
+      <style>
+        #seatTooltip {
+          position: fixed;
+          background: rgba(10, 42, 110, 0.95);
+          color: #ffffff;
+          padding: 10px 12px;
+          border-radius: 6px;
+          font-size: 12px;
+          font-weight: 600;
+          pointer-events: none;
+          z-index: 1000;
+          display: none;
+          white-space: nowrap;
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        #seatTooltip.show {
+          display: block;
+        }
+        
+        #seatTooltip .tooltip-row {
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+        }
+      </style>
+    </defs>
+    <g class="polygons">
+  <div class="event-info">
+    <h1>Morgan Wallen</h1>
+    <div class="event-meta"><strong>FRI APR 10, 2026</strong> · 5:15 PM | U.S. Bank Stadi...</div>
+  </div>
+  <div class="avatar"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></div>
+</div>
+
+<!-- FILTER BAR -->
+<div class="filter-bar">
+  <div class="filter-icon">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2">
+      <line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/>
+    </svg>
+  </div>
+  <div class="price-pill">
+    Price Range: $81 – $1,705 <span>▼</span>
+  </div>
+  <div class="ticket-types-btn">Ticket Types (3)</div>
+</div>
+
+<!-- PRICE RANGE SLIDER (Mobile) -->
+<div class="ticket-price-range" style="display: flex; align-items: center; justify-content: space-between; padding: 16px; background: #fff; border-bottom: 1px solid #eee;">
+  <span class="price-range-label">$152</span>
+  <div style="flex:1;position:relative;height:4px;background:#ddd;border-radius:2px;margin:0 8px;">
+    <div style="position:absolute;left:0;right:0;height:4px;background:#026cdf;border-radius:2px;"></div>
+    <div style="position:absolute;left:-8px;top:50%;transform:translateY(-50%);width:16px;height:16px;border-radius:50%;background:#fff;border:2px solid #026cdf;"></div>
+    <div style="position:absolute;right:-8px;top:50%;transform:translateY(-50%);width:16px;height:16px;border-radius:50%;background:#fff;border:2px solid #026cdf;"></div>
+  </div>
+  <span class="price-max-label">$1,008+</span>
+</div>
+
+<!-- SORT TABS (Mobile) -->
+<div class="ticket-sort-tabs" style="display: flex; background: #fff; border-bottom: 1px solid #eee; padding: 0;">
+  <div class="sort-tab active" style="flex:1; padding: 12px; text-align: center; font-size: 12px; font-weight: 600; border-bottom: 3px solid #026cdf; color: #026cdf;">LOWEST PRICE</div>
+  <div class="sort-tab" style="flex:1; padding: 12px; text-align: center; font-size: 12px; font-weight: 600; border-bottom: 3px solid transparent; color: #999;">BEST SEATS</div>
+</div>
+
+<!-- INFO BANNER (Mobile) -->
+<div class="wai-banner" style="padding: 12px 16px; background: #e8f2ff; border-bottom: 1px solid #c8dcf5; font-size: 12px; color: #1a4fc4;">
+  <strong>We're All In:</strong> Prices include fees (before taxes).
+</div>
+
+<!-- VIP PACKAGES (Mobile) -->
+<div class="vip-row" style="padding: 14px 16px; background: #fff; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span style="font-size: 18px; color: #f0c040;">★</span>
+    <span style="font-size: 14px; font-weight: 700;">VIP Packages</span>
+  </div>
+  <span style="font-size: 13px; color: #026cdf; font-weight: 600;">More Info</span>
+</div>
+
+<!-- STADIUM MAP -->
+<div class="map-container" id="mapContainer">
+  <div class="map-tooltip" id="mapTooltip"></div>
+  <svg class="stadium-svg" viewBox="0 0 10240 7680" xmlns="http://www.w3.org/2000/svg"
+       style="width:100%;height:100%;position:absolute;top:0;left:0;background-image:url('https://mapsapi.tmol.io/maps/geometry/image/72/29/722924?removeFilters=ISM_Shadow&avertaFonts=true&app=PRD2663_EDP_NA');background-size:100% 100%;background-repeat:no-repeat;">
+    <defs>
+      <style>
+        /* Base section styles */
+        .block { cursor: pointer; stroke: rgba(255,255,255,0.5); stroke-width: 10; transition: all 0.12s; }
+        .block.is-available:hover { opacity: 0.8; stroke: #fff; stroke-width: 14; }
+        .block.sel { stroke: #ffe000 !important; stroke-width: 22 !important; opacity: 1 !important; filter: drop-shadow(0 0 6px rgba(255,224,0,0.7)); }
+
+        /* Unavailable – greyed out, no pointer */
+        .block:not(.is-available) { fill: rgba(160,174,190,0.45); cursor: default; stroke: rgba(255,255,255,0.15); }
+        .block:not(.is-available):hover { opacity: 1; }
+
+        /* 400 level – light blue */
+        .block.is-available[data-section-name="401"],.block.is-available[data-section-name="402"],.block.is-available[data-section-name="403"],.block.is-available[data-section-name="404"],.block.is-available[data-section-name="405"],.block.is-available[data-section-name="406"],.block.is-available[data-section-name="407"],.block.is-available[data-section-name="408"],.block.is-available[data-section-name="409"],.block.is-available[data-section-name="410"],.block.is-available[data-section-name="411"],.block.is-available[data-section-name="412"],.block.is-available[data-section-name="413"],.block.is-available[data-section-name="414"],.block.is-available[data-section-name="415"],.block.is-available[data-section-name="416"],.block.is-available[data-section-name="417"],.block.is-available[data-section-name="418"],.block.is-available[data-section-name="419"],.block.is-available[data-section-name="420"],.block.is-available[data-section-name="421"],.block.is-available[data-section-name="431"],.block.is-available[data-section-name="432"],.block.is-available[data-section-name="433"],.block.is-available[data-section-name="434"],.block.is-available[data-section-name="435"],.block.is-available[data-section-name="436"],.block.is-available[data-section-name="437"],.block.is-available[data-section-name="438"],.block.is-available[data-section-name="439"],.block.is-available[data-section-name="440"],.block.is-available[data-section-name="441"],.block.is-available[data-section-name="442"],.block.is-available[data-section-name="443"],.block.is-available[data-section-name="444"] { fill: rgba(168,200,240,0.82); }
+
+        /* 300 level – mid blue */
+        .block.is-available[data-section-name="303"],.block.is-available[data-section-name="304"],.block.is-available[data-section-name="305"],.block.is-available[data-section-name="306"],.block.is-available[data-section-name="307"],.block.is-available[data-section-name="308"],.block.is-available[data-section-name="309"],.block.is-available[data-section-name="310"],.block.is-available[data-section-name="311"],.block.is-available[data-section-name="312"],.block.is-available[data-section-name="313"],.block.is-available[data-section-name="314"],.block.is-available[data-section-name="315"],.block.is-available[data-section-name="316"],.block.is-available[data-section-name="317"],.block.is-available[data-section-name="318"],.block.is-available[data-section-name="319"],.block.is-available[data-section-name="320"],.block.is-available[data-section-name="330"],.block.is-available[data-section-name="331"],.block.is-available[data-section-name="332"],.block.is-available[data-section-name="333"],.block.is-available[data-section-name="334"],.block.is-available[data-section-name="335"],.block.is-available[data-section-name="336"],.block.is-available[data-section-name="337"],.block.is-available[data-section-name="338"],.block.is-available[data-section-name="339"],.block.is-available[data-section-name="340"],.block.is-available[data-section-name="341"],.block.is-available[data-section-name="342"],.block.is-available[data-section-name="343"],.block.is-available[data-section-name="344"],.block.is-available[data-section-name="345"],.block.is-available[data-section-name="346"],.block.is-available[data-section-name="347"] { fill: rgba(74,144,226,0.82); }
+
+        /* 200 level – dark blue */
+        .block.is-available[data-section-name="201"],.block.is-available[data-section-name="202"],.block.is-available[data-section-name="203"],.block.is-available[data-section-name="204"],.block.is-available[data-section-name="205"],.block.is-available[data-section-name="206"],.block.is-available[data-section-name="207"],.block.is-available[data-section-name="208"],.block.is-available[data-section-name="218"],.block.is-available[data-section-name="219"],.block.is-available[data-section-name="220"],.block.is-available[data-section-name="221"],.block.is-available[data-section-name="229"],.block.is-available[data-section-name="230"],.block.is-available[data-section-name="231"],.block.is-available[data-section-name="232"],.block.is-available[data-section-name="242"],.block.is-available[data-section-name="243"],.block.is-available[data-section-name="244"],.block.is-available[data-section-name="245"],.block.is-available[data-section-name="246"],.block.is-available[data-section-name="247"],.block.is-available[data-section-name="248"] { fill: rgba(26,79,196,0.82); }
+
+        /* 100 level – navy */
+        .block.is-available[data-section-name="101"],.block.is-available[data-section-name="102"],.block.is-available[data-section-name="103"],.block.is-available[data-section-name="104"],.block.is-available[data-section-name="105"],.block.is-available[data-section-name="106"],.block.is-available[data-section-name="107"],.block.is-available[data-section-name="108"],.block.is-available[data-section-name="117"],.block.is-available[data-section-name="118"],.block.is-available[data-section-name="119"],.block.is-available[data-section-name="127"],.block.is-available[data-section-name="128"],.block.is-available[data-section-name="129"],.block.is-available[data-section-name="130"],.block.is-available[data-section-name="138"],.block.is-available[data-section-name="139"],.block.is-available[data-section-name="140"],.block.is-available[data-section-name="141"],.block.is-available[data-section-name="142"],.block.is-available[data-section-name="143"],.block.is-available[data-section-name="144"] { fill: rgba(10,42,110,0.88); }
+
+        /* CLUB sections – purple-blue */
+        .block.is-available[data-section-name^="CLUB"] { fill: rgba(90,90,200,0.82); }
+
+        /* PIT sections – teal green */
+        .block.is-available[data-section-name^="PIT"] { fill: rgba(29,158,117,0.88); }
+
+        /* Floor sections (A/B/C) – pale with dark text */
+        .block.is-available[data-section-name^="A"],.block.is-available[data-section-name^="B"],.block.is-available[data-section-name="C3"],.block.is-available[data-section-name="C3 ADA"] { fill: rgba(220,236,255,0.88); }
+
+        /* Labels */
+        .label {
+          fill: rgba(255,255,255,0.95);
+          font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+          font-weight: 700;
+          pointer-events: none;
+          text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+        }
+      </style>
+      
+      <!-- SEAT STATUS COLORS -->
+      <style>
+        /* Seat Status Color Coding */
+        .seat {
+          fill: #a8c8f0;
+          stroke: #4a90e2;
+          stroke-width: 0.5;
+          transition: fill 0.2s ease, filter 0.2s ease;
+          cursor: pointer;
+        }
+        
+        .seat:hover:not(.sold):not(.unavailable) {
+          fill: #1a4fc4;
+          filter: drop-shadow(0 0 3px rgba(26, 79, 196, 0.6));
+        }
+        
+        .seat.selected {
+          fill: #0a2a6e;
+          stroke: #ffffff;
+          stroke-width: 1.5;
+          filter: drop-shadow(0 0 4px rgba(10, 42, 110, 0.8));
+        }
+        
+        .seat.sold {
+          fill: #d0d0d0;
+          stroke: #999;
+          cursor: not-allowed;
+          opacity: 0.6;
+        }
+        
+        .seat.unavailable {
+          fill: #e8c8c8;
+          stroke: #c0a0a0;
+          cursor: not-allowed;
+          opacity: 0.5;
+        }
+        
+        /* Custom Premium Seats (g elements) */
+        .seat.is-custom circle {
+          fill: #4a90e2;
+          stroke: #1a4fc4;
+          stroke-width: 1;
+        }
+        
+        .seat.is-custom:hover:not(.sold):not(.unavailable) circle {
+          fill: #1a4fc4;
+          filter: drop-shadow(0 0 3px rgba(26, 79, 196, 0.6));
+        }
+        
+        .seat.is-custom.selected circle {
+          fill: #0a2a6e;
+          stroke: #ffffff;
+          stroke-width: 2;
+        }
+        
+        .seat.is-custom.sold circle {
+          fill: #d0d0d0;
+          opacity: 0.6;
+        }
+      </style>
+
+      <!-- SEAT TOOLTIP -->
+      <style>
+        #seatTooltip {
+          position: fixed;
+          background: rgba(10, 42, 110, 0.95);
+          color: #ffffff;
+          padding: 10px 12px;
+          border-radius: 6px;
+          font-size: 12px;
+          font-weight: 600;
+          pointer-events: none;
+          z-index: 1000;
+          display: none;
+          white-space: nowrap;
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        #seatTooltip.show {
+          display: block;
+        }
+        
+        #seatTooltip .tooltip-row {
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+        }
+      </style>
+    </defs>
+    <g class="polygons">
+<path data-component="svg__section" data-section-id="s_130" data-section-name="434" class="block is-available map-section" d="M6926.91,6427.4C6896.62,6433.29,6864.22,6439.16,6832.89,6444.83C6747.84,6460.21,6645.41,6474.81,6530.6,6488.35C6530.6,6488.35,6586.73,6895.22,6586.73,6895.22C6653.73,6886.46,6902.4,6849.25,6959.86,6839.62C6972.66,6834.27,6986.39,6828.46,6999.11,6823.0L6999.11,6823.0C6999.11,6823.0,6963.01,6625.2,6926.91,6427.4Z"></path>
+<path data-component="svg__section" data-section-id="s_131" data-section-name="336" class="block is-available map-section" d="M6081.46,6080.25C5956.97,6090.11,5826.83,6098.66,5698.95,6105.29C5698.95,6105.29,5726.92,6554.17,5726.92,6554.17C5859.45,6547.19,5994.25,6538.33,6123.41,6528.01L6123.41,6528.01C6123.41,6528.01,6102.43,6304.13,6081.46,6080.25Z"></path>
+<path data-component="svg__section" data-section-id="s_132" data-section-name="CLUB 137" class="block is-available map-section" d="M4231.54,4719.55C4185.79,5142.04,4140.05,5564.53,4140.05,5564.53C4199.98,5571.0,4266.74,5577.53,4339.66,5583.68C4339.66,5583.68,4348.95,5484.16,4348.95,5484.16C4356.95,5484.84,4367.02,5485.7,4375.11,5486.36C4375.11,5486.36,4436.28,4738.98,4436.28,4738.98L4436.28,4738.98C4361.18,4732.84,4291.93,4726.09,4231.54,4719.55Z"></path>
+<path data-component="svg__section" data-section-id="s_133" data-section-name="244" class="block is-available map-section" d="M2990.41,5151.0C2868.4,5254.58,2746.4,5358.17,2746.4,5358.17C2776.23,5391.81,2805.92,5422.79,2835.58,5451.48C2849.56,5464.99,2863.44,5477.92,2877.42,5490.48C2901.32,5511.89,2925.21,5531.94,2949.21,5550.75C2960.32,5559.47,2972.26,5568.6,2983.38,5576.78C2983.38,5576.78,3172.93,5318.98,3172.93,5318.98C3164.42,5312.71,3155.14,5305.59,3146.65,5298.92C3128.09,5284.37,3109.55,5268.81,3091.01,5252.19C3080.02,5242.33,3069.03,5232.09,3058.02,5221.44L3058.02,5221.44C3035.54,5199.69,3013.02,5176.27,2990.41,5151.0Z"></path>
+<path data-component="svg__section" data-section-id="s_134" data-section-name="337" class="block is-available map-section" d="M5698.96,6105.2C5567.17,6112.02,5435.62,6117.07,5312.65,6119.71C5312.65,6119.71,5324.0,6569.53,5324.0,6569.53C5452.34,6566.7,5589.46,6561.34,5726.91,6554.1L5726.91,6554.1C5726.91,6554.1,5712.93,6329.65,5698.96,6105.2Z"></path>
+<path data-component="svg__section" data-section-id="s_135" data-section-name="138" class="block is-available map-section" d="M4106.84,4704.9C4054.69,5126.67,4002.55,5548.45,4002.55,5548.45C4042.93,5553.54,4089.64,5559.13,4140.13,5564.58C4140.13,5564.58,4231.58,4719.63,4231.58,4719.63L4231.58,4719.63C4185.68,4714.65,4143.28,4709.52,4106.84,4704.9Z"></path>
+<path data-component="svg__section" data-section-id="s_136" data-section-name="435" class="block is-available map-section" d="M6530.61,6488.35C6406.26,6502.99,6267.29,6516.56,6123.5,6528.05C6123.5,6528.05,6162.07,6942.26,6162.07,6942.26C6305.09,6929.22,6447.39,6913.47,6586.76,6895.26L6586.76,6895.26C6586.76,6895.26,6558.68,6691.8,6530.61,6488.35Z"></path>
+<path data-component="svg__section" data-section-id="s_137" data-section-name="436" class="block is-available map-section" d="M6123.51,6528.05C5994.7,6538.34,5859.5,6547.14,5727.3,6554.11C5727.3,6554.11,5753.03,6972.05,5753.03,6972.05C5882.57,6964.98,6154.39,6943.06,6162.11,6942.35L6162.11,6942.35C6162.11,6942.35,6142.81,6735.2,6123.51,6528.05Z"></path>
+<path data-component="svg__section" data-section-id="s_138" data-section-name="139" class="block is-available map-section" d="M3874.05,4666.2C3762.18,5076.24,3650.3,5486.28,3650.3,5486.28C3710.89,5502.63,3779.7,5516.81,3856.41,5528.3C3891.92,5533.65,3941.85,5540.8,4002.63,5548.48C4002.63,5548.48,4106.93,4704.93,4106.93,4704.93C4055.81,4698.44,4013.33,4692.37,3982.87,4687.79L3982.87,4687.79C3942.36,4681.73,3905.67,4674.68,3874.05,4666.2Z"></path>
+<path data-component="svg__section" data-section-id="s_139" data-section-name="338" class="block is-available map-section" d="M4925.92,6119.65C4920.69,6344.5,4915.45,6569.35,4915.45,6569.35C4988.13,6570.99,5255.69,6571.11,5324.01,6569.61C5324.01,6569.61,5312.71,6119.71,5312.71,6119.71L5312.71,6119.71C5248.16,6121.09,4992.15,6121.09,4925.92,6119.65Z"></path>
+<path data-component="svg__section" data-section-id="s_70" data-section-name="410" class="block is-available map-section" d="M4474.6,520.65C4471.42,521.06,4364.21,536.19,4314.27,544.46C4229.63,558.48,4144.96,574.945,4062.3,593.225C4062.3,593.225,4109.4,1152.53,4109.4,1152.53C4239.26,1142.1,4375.01,1133.06,4508.95,1125.98L4508.95,1125.98C4508.95,1125.98,4491.78,823.313,4474.6,520.65Z"></path>
+<path data-component="svg__section" data-section-id="s_72" data-section-name="320" class="block is-available map-section" d="M8083.81,1883.25C7913.28,2030.07,7742.75,2176.9,7742.75,2176.9C7771.03,2208.51,7797.79,2241.24,7821.83,2273.25C7832.86,2287.95,7843.47,2302.66,7853.66,2317.36C7870.14,2341.13,7885.54,2364.87,7899.93,2388.48C7899.93,2388.48,8301.15,2182.68,8301.15,2182.68C8296.4,2174.58,8291.57,2166.45,8286.64,2158.32C8267.06,2126.02,8246.04,2093.52,8223.5,2061.0C8210.14,2041.73,8196.24,2022.45,8181.72,2003.1L8181.72,2003.1C8151.75,1963.19,8118.72,1922.63,8083.81,1883.25Z"></path>
+<path data-component="svg__section" data-section-id="s_71" data-section-name="319" class="block is-available map-section" d="M7753.41,1581.3C7621.3,1763.5,7489.2,1945.7,7489.2,1945.7C7499.05,1952.81,7509.74,1960.66,7519.59,1968.19C7533.26,1978.63,7546.93,1989.49,7560.63,2000.79C7583.74,2019.86,7606.9,2040.19,7630.16,2061.88C7665.06,2094.43,7700.19,2130.05,7735.71,2169.12C7738.08,2171.72,7740.43,2174.33,7742.77,2176.94C7742.77,2176.94,8083.83,1883.28,8083.83,1883.28C8078.84,1877.65,8073.78,1872.02,8068.68,1866.41C8024.41,1817.72,7980.59,1773.37,7937.06,1732.77C7906.98,1704.72,7877.02,1678.46,7847.05,1653.71C7828.88,1638.73,7810.83,1624.39,7792.71,1610.56L7792.71,1610.56C7779.85,1600.73,7766.27,1590.59,7753.41,1581.3Z"></path>
+<path data-component="svg__section" data-section-id="s_78" data-section-name="220" class="block is-available map-section" d="M7257.38,2102.8C7162.62,2231.71,7067.85,2360.63,7067.85,2360.63C7075.0,2365.88,7082.15,2371.27,7089.29,2376.8C7100.28,2385.31,7111.26,2394.18,7122.25,2403.41C7140.8,2418.97,7159.34,2435.6,7177.9,2453.35C7201.87,2476.25,7226.57,2501.87,7250.68,2528.78C7250.68,2528.78,7494.63,2321.53,7494.63,2321.53C7462.88,2285.77,7430.56,2252.17,7398.97,2221.97C7375.32,2199.37,7351.71,2178.23,7328.03,2158.34C7313.7,2146.31,7299.47,2134.82,7285.24,2123.81L7285.24,2123.81C7275.96,2116.62,7266.67,2109.62,7257.38,2102.8Z"></path>
+<path data-component="svg__section" data-section-id="s_77" data-section-name="412" class="block is-available map-section" d="M4899.65,483.388C4899.65,483.388,4914.36,1110.17,4914.36,1110.17C4986.34,1108.56,5254.37,1108.47,5323.45,1109.99C5323.45,1109.99,5338.83,483.213,5338.83,483.213L5338.83,483.213C5266.54,480.063,4928.41,482.128,4899.65,483.388Z"></path>
+<path data-component="svg__section" data-section-id="s_79" data-section-name="322" class="block map-section" d="M8447.81,2494.9C8236.3,2571.77,8024.8,2648.65,8024.8,2648.65C8048.11,2713.07,8064.75,2773.33,8075.97,2824.47C8086.35,2871.7,8092.41,2911.95,8095.72,2942.84C8095.72,2942.84,8542.51,2890.09,8542.51,2890.09C8537.59,2845.45,8529.28,2790.65,8515.52,2728.02L8515.52,2728.02C8500.63,2660.16,8478.8,2580.47,8447.81,2494.9Z"></path>
+<path data-component="svg__section" data-section-id="s_74" data-section-name="218" class="block is-available map-section" d="M6851.01,1785.95C6792.26,1992.79,6733.5,2199.63,6733.5,2199.63C6768.18,2209.91,6807.26,2222.83,6841.01,2236.09C6841.01,2236.09,6851.98,2240.59,6862.95,2245.08C6944.9,2046.28,7026.85,1847.48,7026.85,1847.48C7017.34,1843.62,7007.83,1839.76,6998.31,1835.89L6998.31,1835.89C6952.91,1818.06,6907.01,1802.52,6851.01,1785.95Z"></path>
+<path data-component="svg__section" data-section-id="s_73" data-section-name="411" class="block is-available map-section" d="M4899.26,483.5C4881.87,484.27,4764.57,491.12,4723.73,494.38C4640.28,501.04,4556.52,509.955,4474.6,520.705C4474.6,520.705,4509.03,1125.96,4509.03,1125.96C4646.79,1118.68,4785.17,1113.24,4914.76,1110.32L4914.76,1110.32C4914.76,1110.32,4906.81,796.92,4899.26,483.5Z"></path>
+<path data-component="svg__section" data-section-id="s_76" data-section-name="321" class="block map-section" d="M8301.16,2182.6C8167.4,2251.22,8033.65,2319.83,7899.9,2388.45C7900.85,2390.02,7901.8,2391.58,7901.8,2391.58C7924.18,2428.52,7944.09,2465.13,7961.8,2500.99C7984.15,2546.28,8002.99,2590.39,8018.83,2632.49C8020.87,2637.91,8022.86,2643.3,8024.8,2648.66C8024.8,2648.66,8447.72,2494.91,8447.72,2494.91C8445.22,2487.99,8442.64,2481.03,8440.01,2474.03C8419.27,2418.91,8394.61,2361.15,8365.31,2301.79L8365.31,2301.79C8346.12,2262.93,8324.49,2222.5,8301.16,2182.6Z"></path>
+<path data-component="svg__section" data-section-id="s_75" data-section-name="219" class="block is-available map-section" d="M6985.43,1949.35C6924.19,2097.13,6862.95,2244.92,6862.95,2244.92C6912.9,2265.81,6962.02,2290.8,7010.82,2321.65C7029.58,2333.52,7049.18,2347.08,7067.88,2360.78C7067.88,2360.78,7257.43,2102.88,7257.43,2102.88C7232.57,2084.65,7206.79,2066.98,7181.85,2051.2L7181.85,2051.2C7117.28,2010.37,7053.28,1977.69,6985.43,1949.35Z"></path>
+<path data-component="svg__section" data-section-id="s_140" data-section-name="245" class="block is-available map-section" d="M2853.03,4944.65C2710.17,5016.73,2567.3,5088.81,2567.3,5088.81C2578.25,5111.35,2590.17,5134.17,2603.69,5158.23C2603.69,5158.23,2624.33,5193.32,2624.33,5193.32C2637.32,5214.6,2651.09,5235.66,2665.74,5256.5C2688.07,5288.22,2712.23,5319.18,2738.47,5349.18C2740.89,5351.95,2744.01,5355.5,2746.43,5358.23C2746.43,5358.23,2990.48,5151.03,2990.48,5151.03C2987.02,5147.16,2982.81,5142.47,2979.34,5138.51C2960.63,5117.12,2943.39,5095.01,2927.47,5072.39C2916.89,5057.32,2906.88,5042.03,2897.45,5026.57C2897.45,5026.57,2881.23,4998.9,2881.23,4998.9L2881.23,4998.9C2871.13,4980.94,2861.75,4962.83,2853.03,4944.65Z"></path>
+<path data-component="svg__section" data-section-id="s_141" data-section-name="437" class="block is-available map-section" d="M5726.86,6554.2C5589.07,6561.46,5452.08,6566.7,5323.4,6569.54C5323.4,6569.54,5334.32,6987.29,5334.32,6987.29C5474.85,6984.73,5615.14,6979.68,5753.06,6972.16L5753.06,6972.16C5753.06,6972.16,5739.96,6763.18,5726.86,6554.2Z"></path>
+<path data-component="svg__section" data-section-id="s_142" data-section-name="339" class="block is-available map-section" d="M4535.49,6104.9C4522.77,6329.33,4510.05,6553.77,4510.05,6553.77C4647.77,6561.05,4785.64,6566.43,4915.41,6569.36C4915.41,6569.36,4926.01,6119.61,4926.01,6119.61L4926.01,6119.61C4801.62,6116.9,4668.55,6111.85,4535.49,6104.9Z"></path>
+<path data-component="svg__section" data-section-id="s_143" data-section-name="140" class="block is-available map-section" d="M3769.54,4622.0C3521.4,4967.13,3273.25,5312.27,3273.25,5312.27C3312.3,5339.79,3353.54,5365.05,3397.51,5388.13C3461.1,5421.49,3530.93,5450.57,3609.53,5474.51C3622.76,5478.54,3636.35,5482.44,3650.33,5486.22C3650.33,5486.22,3874.12,4666.27,3874.12,4666.27C3868.35,4664.71,3862.71,4663.1,3857.21,4661.42C3833.3,4654.13,3811.84,4645.66,3792.47,4635.48L3792.47,4635.48C3784.5,4631.29,3776.87,4626.81,3769.54,4622.0Z"></path>
+<path data-component="svg__section" data-section-id="s_144" data-section-name="246" class="block is-available map-section" d="M2772.57,4710.8C2563.54,4761.12,2354.5,4811.43,2354.5,4811.43C2362.34,4845.23,2371.56,4880.09,2382.31,4915.62C2388.28,4935.41,2394.75,4955.39,2402.33,4977.31C2402.33,4977.31,2506.15,4940.96,2506.15,4940.96C2520.61,4982.55,2537.42,5024.75,2556.87,5066.79C2560.12,5073.83,2563.96,5081.78,2567.38,5088.83C2567.38,5088.83,2853.03,4944.68,2853.03,4944.68C2851.23,4940.92,2849.04,4936.22,2847.3,4932.46C2831.84,4899.06,2818.6,4865.53,2806.91,4831.59C2802.06,4817.4,2797.85,4804.24,2793.9,4791.22L2793.9,4791.22C2785.65,4763.9,2778.61,4737.13,2772.57,4710.8Z"></path>
+<path data-component="svg__section" data-section-id="s_145" data-section-name="340" class="block is-available map-section" d="M4148.59,6079.4C4129.59,6303.35,4110.6,6527.3,4110.6,6527.3C4240.37,6537.72,4376.1,6546.78,4510.06,6553.86C4510.06,6553.86,4535.56,6104.91,4535.56,6104.91L4535.56,6104.91C4405.98,6098.13,4274.31,6089.48,4148.59,6079.4Z"></path>
+<path data-component="svg__section" data-section-id="s_146" data-section-name="247" class="block is-available map-section" d="M2310.2,4392.5C2312.3,4472.77,2314.4,4553.05,2314.4,4553.05C2316.21,4572.31,2318.01,4591.57,2318.01,4591.57C2324.16,4652.19,2334.93,4726.46,2353.64,4807.77C2353.85,4808.66,2354.27,4810.58,2354.48,4811.48C2354.48,4811.48,2772.63,4711.28,2772.63,4711.28C2758.73,4650.51,2750.41,4593.51,2745.8,4548.11C2745.8,4548.11,2744.83,4537.8,2743.87,4527.49C2742.7,4482.49,2741.53,4437.5,2740.36,4392.5L2740.36,4392.5C2596.97,4392.5,2453.59,4392.5,2310.2,4392.5Z"></path>
+<path data-component="svg__section" data-section-id="s_300" data-section-name="A2" class="block is-available map-section" d="M5545.43,4041.34C5389.5,4041.34,5275.63,4041.34,5119.69,4041.34C5119.69,4100.15,5119.69,4385.59,5119.69,4444.39C5275.63,4444.39,5389.5,4444.39,5545.43,4444.39L5545.43,4444.39C5545.43,4385.59,5545.43,4100.15,5545.43,4041.34Z"></path>
+<path data-component="svg__section" data-section-id="s_147" data-section-name="438" class="block is-available map-section" d="M4915.97,6569.35C4913.08,6687.86,4910.19,6806.38,4907.3,6924.89C4924.08,6924.88,4940.86,6924.87,4957.64,6924.86C4974.34,6908.97,4991.05,6893.09,5007.75,6877.2C5120.02,6877.2,5232.3,6877.2,5232.3,6877.2C5257.29,6901.03,5282.29,6924.86,5282.29,6924.86C5307.52,6924.88,5332.75,6924.89,5332.75,6924.89C5328.4,6747.25,5324.04,6569.61,5324.04,6569.61L5324.04,6569.61C5255.77,6571.11,4988.29,6570.97,4915.97,6569.35Z"></path>
+<path data-component="svg__section" data-section-id="s_148" data-section-name="141" class="block is-available map-section" d="M3681.75,4580.66C3623.75,4604.96,3565.75,4629.26,3507.75,4653.56C3513.82,4663.77,3519.89,4673.99,3525.96,4684.2C3352.04,4803.23,3178.12,4922.26,3004.2,5041.29C3025.07,5069.23,3045.93,5097.16,3066.8,5125.1L3066.8,5125.1C3113.8,5174.24,3160.8,5223.38,3160.8,5223.38C3201.27,5256.39,3241.73,5289.4,3241.73,5289.4C3257.5,5300.79,3273.28,5312.18,3273.28,5312.18C3521.41,4967.03,3769.53,4621.88,3769.53,4621.88C3769.53,4621.88,3745.23,4604.33,3734.08,4594.08C3733.45,4593.5,3732.8,4592.87,3732.13,4592.22L3732.13,4592.22C3715.34,4588.36,3698.55,4584.51,3681.75,4580.66Z"></path>
+<path data-component="svg__section" data-section-id="s_149" data-section-name="142" class="block is-available map-section" d="M3485.64,4527.95L2844.4,4684.95L2871.56,4781.17L2918.94,4898.82L2984.79,5015.44L3004.23,5041.53L3526.03,4684.46L3507.8,4653.78L3532.83,4642.83L3515.02,4612.1L3496.43,4565.98L3485.64,4527.95Z"></path>
+<path data-component="svg__section" data-section-id="s_309" data-section-name="B2" class="block is-available map-section" d="M5119.69,4041.34L4738.09,4041.34L4738.09,4317.62L4782.14,4363.62L4782.14,4444.39L5119.69,4444.39L5119.69,4041.34Z"></path>
+<path data-component="svg__section" data-section-id="s_61" data-section-name="407" class="block is-available map-section" d="M3233.35,860.4C3111.55,913.04,2993.37,970.61,2879.23,1032.81C2844.83,1051.55,2809.92,1071.26,2776.25,1090.83C2776.25,1090.83,2891.03,1365.93,2891.03,1365.93C2936.66,1348.87,2984.34,1333.01,3031.43,1319.19C3117.25,1294.05,3206.43,1273.82,3299.65,1255.38L3299.65,1255.38C3299.65,1255.38,3266.5,1057.89,3233.35,860.4Z"></path>
+<path data-component="svg__section" data-section-id="s_60" data-section-name="117" class="block is-available map-section" d="M6237.06,2130.95C6184.6,2552.75,6132.15,2974.55,6132.15,2974.55C6184.23,2981.14,6227.38,2987.22,6258.26,2991.86C6297.82,2997.78,6332.78,3004.39,6363.85,3012.59C6363.85,3012.59,6588.26,2192.73,6588.26,2192.73C6528.08,2176.56,6460.7,2162.66,6384.59,2151.26L6384.59,2151.26C6348.8,2145.88,6298.45,2138.71,6237.06,2130.95Z"></path>
+<path data-component="svg__section" data-section-id="s_67" data-section-name="409" class="block is-available map-section" d="M4062.31,593.2C4029.48,600.47,3996.82,608.07,3964.33,615.99C3853.98,642.9,3744.57,673.945,3638.35,708.175C3638.35,708.175,3699.58,1192.73,3699.58,1192.73C3824.56,1177.83,3963.98,1164.18,4109.6,1152.48L4109.6,1152.48C4109.6,1152.48,4085.96,872.838,4062.31,593.2Z"></path>
+<path data-component="svg__section" data-section-id="s_66" data-section-name="318" class="block is-available map-section" d="M7340.01,1361.95C7248.55,1568.3,7157.1,1774.65,7157.1,1774.65C7175.18,1780.92,7194.12,1787.83,7211.97,1794.83C7283.33,1822.81,7352.99,1857.05,7422.25,1900.55C7444.61,1914.59,7466.93,1929.61,7489.25,1945.68C7489.25,1945.68,7753.34,1581.33,7753.34,1581.33C7722.78,1559.27,7692.21,1538.71,7661.6,1519.48C7567.6,1460.44,7473.1,1413.87,7376.31,1375.92L7376.31,1375.92C7364.53,1371.3,7351.86,1366.32,7340.01,1361.95Z"></path>
+<path data-component="svg__section" data-section-id="s_69" data-section-name="208" class="block is-available map-section" d="M3382.04,2243.35C3387.99,2240.89,3393.96,2238.48,3399.94,2236.13C3434.0,2222.74,3468.47,2211.14,3503.47,2200.79C3505.12,2200.3,3506.77,2199.82,3508.42,2199.34C3508.42,2199.34,3390.92,1785.7,3390.92,1785.7C3387.77,1786.61,3384.63,1787.53,3381.49,1788.46C3334.49,1802.37,3288.3,1818.0,3242.72,1835.92C3233.89,1839.39,3225.08,1842.94,3216.3,1846.58L3216.3,1846.58C3216.3,1846.58,3299.17,2044.97,3382.04,2243.35Z"></path>
+<path data-component="svg__section" data-section-id="s_68" data-section-name="207" class="block is-available map-section" d="M3258.83,1948.3C3192.35,1976.01,3124.17,2010.22,3059.26,2051.27C3033.9,2067.3,3008.64,2084.5,2983.4,2103.04C2983.4,2103.04,3172.94,2360.87,3172.94,2360.87C3192.0,2346.86,3211.08,2333.86,3230.24,2321.75C3279.45,2290.65,3329.96,2265.01,3382.13,2243.25L3382.13,2243.25C3382.13,2243.25,3320.48,2095.77,3258.83,1948.3Z"></path>
+<path data-component="svg__section" data-section-id="s_63" data-section-name="118" class="block is-available map-section" d="M6588.31,2192.7C6476.05,2602.65,6363.8,3012.6,6363.8,3012.6C6370.34,3014.34,6377.7,3016.4,6383.91,3018.29C6407.82,3025.58,6429.29,3034.05,6448.59,3044.18C6448.59,3044.18,6459.54,3050.75,6470.48,3057.31C6718.69,2712.02,6966.9,2366.73,6966.9,2366.73C6928.3,2339.6,6887.5,2314.6,6843.79,2291.63C6779.93,2258.12,6710.08,2229.08,6631.75,2205.2L6631.75,2205.2C6617.97,2201.0,6602.91,2196.64,6588.31,2192.7Z"></path>
+<path data-component="svg__section" data-section-id="s_62" data-section-name="408" class="block is-available map-section" d="M3638.37,708.1C3509.71,749.6,3384.23,796.34,3262.32,848.0C3252.95,851.97,3242.68,856.395,3233.35,860.425C3233.35,860.425,3299.6,1255.38,3299.6,1255.38C3334.94,1248.39,3371.43,1241.5,3408.18,1234.85C3490.19,1220.02,3589.62,1205.86,3699.6,1192.73L3699.6,1192.73C3699.6,1192.73,3668.99,950.413,3638.37,708.1Z"></path>
+<path data-component="svg__section" data-section-id="s_65" data-section-name="317" class="block is-available map-section" d="M6925.91,1252.25C6885.3,1473.57,6844.7,1694.9,6844.7,1694.9C6927.4,1711.04,7007.02,1728.74,7083.0,1751.02C7107.98,1758.34,7132.67,1766.17,7157.13,1774.63C7157.13,1774.63,7339.91,1362.09,7339.91,1362.09C7297.07,1346.32,7253.71,1332.13,7209.62,1319.2L7209.62,1319.2C7119.21,1292.7,7024.68,1271.5,6925.91,1252.25Z"></path>
+<path data-component="svg__section" data-section-id="s_64" data-section-name="206" class="block is-available map-section" d="M2983.48,2103.0C2974.56,2109.56,2964.77,2116.91,2955.86,2123.81C2941.63,2134.83,2927.39,2146.32,2913.06,2158.35C2889.36,2178.27,2865.72,2199.43,2842.06,2222.04C2810.29,2252.42,2778.42,2285.46,2746.45,2321.54C2746.45,2321.54,2990.37,2528.79,2990.37,2528.79C3014.72,2501.58,3038.96,2476.5,3063.17,2453.37C3081.74,2435.61,3100.28,2418.99,3118.82,2403.42C3129.81,2394.19,3140.79,2385.33,3151.78,2376.82C3158.56,2371.56,3166.2,2365.92,3172.98,2360.93L3172.98,2360.93C3172.98,2360.93,3078.23,2231.97,2983.48,2103.0Z"></path>
+<path data-component="svg__section" data-section-id="s_150" data-section-name="341" class="block is-available map-section" d="M3756.8,6041.0C3728.73,6264.08,3700.65,6487.16,3700.65,6487.16C3825.32,6502.01,3965.24,6515.58,4110.51,6527.26C4110.51,6527.26,4148.61,6079.41,4148.61,6079.41L4148.61,6079.41C4009.67,6068.27,3875.72,6055.25,3756.8,6041.0Z"></path>
+<path data-component="svg__section" data-section-id="s_151" data-section-name="248" class="block is-available map-section" d="M2309.75,4029.5L2310.23,4392.48L2740.48,4392.53L2739.76,4029.5L2309.75,4029.5Z"></path>
+<path data-component="svg__section" data-section-id="s_152" data-section-name="439" class="block is-available map-section" d="M4510.59,6553.85C4498.52,6762.92,4486.45,6972.0,4486.45,6972.0C4624.57,6979.56,4765.13,6984.72,4905.86,6987.31C4905.86,6987.31,4916.01,6569.36,4916.01,6569.36L4916.01,6569.36C4786.27,6566.43,4648.36,6561.12,4510.59,6553.85Z"></path>
+<path data-component="svg__section" data-section-id="s_153" data-section-name="143" class="block is-available map-section" d="M2807.71,4332.7C2807.71,4356.03,2807.44,4421.5,2810.42,4466.39C2810.42,4466.39,2816.5,4532.63,2816.5,4532.63C2821.78,4577.32,2830.25,4628.2,2842.97,4680.4C2842.97,4680.4,2843.56,4682.69,2844.14,4684.98C3164.69,4606.6,3485.24,4528.23,3485.24,4528.23C3484.77,4526.29,3484.3,4524.36,3484.3,4524.36C3478.35,4499.95,3474.46,4476.13,3471.74,4452.94C3471.74,4452.94,3469.06,4423.06,3469.06,4423.06C3467.68,4402.25,3467.71,4387.81,3467.76,4383.9C3467.76,4383.9,3467.76,4358.3,3467.76,4332.7L3467.76,4332.7C3247.75,4332.7,3027.73,4332.7,2807.71,4332.7Z"></path>
+<path data-component="svg__section" data-section-id="s_154" data-section-name="440" class="block is-available map-section" d="M4110.98,6527.3C4093.31,6734.63,4075.65,6941.97,4075.65,6941.97C4084.82,6942.8,4357.84,6964.96,4486.51,6972.01C4486.51,6972.01,4510.11,6553.86,4510.11,6553.86L4510.11,6553.86C4376.13,6546.78,4240.81,6537.72,4110.98,6527.3Z"></path>
+<path data-component="svg__section" data-section-id="s_155" data-section-name="342" class="block is-available map-section" d="M3374.74,5980.55C3337.72,6202.57,3300.7,6424.59,3300.7,6424.59C3335.88,6431.54,3371.71,6438.24,3408.3,6444.86C3490.44,6459.71,3590.88,6474.16,3701.11,6487.31C3701.11,6487.31,3756.86,6041.01,3756.86,6041.01C3655.96,6028.91,3564.12,6015.73,3488.36,6002.03L3488.36,6002.03C3449.6,5995.01,3411.77,5987.96,3374.74,5980.55Z"></path>
+<path data-component="svg__section" data-section-id="s_156" data-section-name="343" class="block is-available map-section" d="M3065.92,5898.7C2978.91,6106.44,2891.9,6314.17,2891.9,6314.17C2937.77,6331.33,2984.21,6346.65,3031.46,6360.49C3117.41,6385.69,3207.26,6406.18,3300.71,6424.66C3300.71,6424.66,3374.71,5980.61,3374.71,5980.61C3299.89,5965.63,3227.38,5948.99,3158.04,5928.67L3158.04,5928.67C3126.92,5919.54,3096.25,5909.63,3065.92,5898.7Z"></path>
+<path data-component="svg__section" data-section-id="s_157" data-section-name="144" class="block is-available map-section" d="M2808.05,3999.9L2808.08,4332.58L3468.13,4332.58L3468.03,3999.98L2808.05,3999.9Z"></path>
+<path data-component="svg__section" data-section-id="s_158" data-section-name="441" class="block is-available map-section" d="M3701.05,6487.2C3675.23,6690.88,3649.4,6894.57,3649.4,6894.57C3663.09,6896.37,3946.19,6930.2,4075.71,6942.06C4075.71,6942.06,4110.66,6527.31,4110.66,6527.31L4110.66,6527.31C3965.41,6515.64,3825.74,6502.05,3701.05,6487.2Z"></path>
+<path data-component="svg__section" data-section-id="s_159" data-section-name="442" class="block is-available map-section" d="M3300.71,6424.5C3267.78,6622.2,3234.85,6819.9,3234.85,6819.9C3250.25,6826.55,3265.71,6833.13,3281.23,6839.62C3402.0,6859.85,3525.56,6878.28,3649.51,6894.56C3649.51,6894.56,3701.16,6487.31,3701.16,6487.31C3590.77,6474.15,3490.52,6459.71,3408.28,6444.84L3408.28,6444.84C3371.82,6438.24,3335.78,6431.42,3300.71,6424.5Z"></path>
+<path data-component="svg__section" data-section-id="s_92" data-section-name="224" class="block map-section" d="M7931.26,3288.1L7501.25,3288.15L7501.36,3651.48L7931.16,3651.48L7931.26,3288.1Z"></path>
+<path data-component="svg__section" data-section-id="s_91" data-section-name="326" class="block map-section" d="M8099.31,4037.05C8099.31,4037.05,8099.26,4306.74,8099.25,4432.49C8099.25,4432.49,8549.26,4432.49,8549.26,4432.49C8549.28,4306.74,8549.36,4037.06,8549.36,4037.06L8549.36,4037.06C8549.36,4037.06,8324.33,4037.05,8099.31,4037.05Z"></path>
+<path data-component="svg__section" data-section-id="s_94" data-section-name="418" class="block is-available map-section" d="M7461.26,1088.6C7400.63,1225.27,7340.0,1361.95,7340.0,1361.95C7351.73,1366.28,7364.67,1371.31,7376.33,1375.89C7473.12,1413.84,7567.62,1460.41,7661.62,1519.45C7692.31,1538.73,7722.96,1559.35,7753.6,1581.47C7753.6,1581.47,7899.99,1378.81,7899.99,1378.81C7878.87,1363.57,7857.75,1348.95,7836.62,1334.91L7836.62,1334.91C7717.81,1247.13,7591.96,1164.5,7461.26,1088.6Z"></path>
+<path data-component="svg__section" data-section-id="s_93" data-section-name="327" class="block map-section" d="M8099.21,4432.8C8099.2,4555.65,8099.21,4657.04,8099.21,4683.36C8099.2,4694.83,8098.29,4712.81,8095.8,4736.24C8095.8,4736.24,8542.6,4788.8,8542.6,4788.8C8547.83,4741.14,8549.19,4705.15,8549.22,4683.69C8549.23,4657.27,8549.15,4555.76,8549.16,4432.8L8549.16,4432.8C8549.16,4432.8,8324.18,4432.8,8099.21,4432.8Z"></path>
+<path data-component="svg__section" data-section-id="s_90" data-section-name="417" class="block is-available map-section" d="M6998.71,856.35C6962.3,1054.3,6925.9,1252.25,6925.9,1252.25C7024.49,1271.46,7119.4,1292.74,7209.67,1319.2C7253.88,1332.16,7297.05,1346.12,7340.0,1361.95C7340.0,1361.95,7461.2,1088.66,7461.2,1088.66C7409.6,1058.71,7357.12,1029.73,7303.8,1001.74L7303.8,1001.74C7205.21,949.993,7102.82,901.1,6998.71,856.35Z"></path>
+<path data-component="svg__section" data-section-id="s_99" data-section-name="328" class="block map-section" d="M8095.81,4736.15C8092.49,4766.98,8086.32,4808.18,8075.99,4855.19C8064.76,4906.39,8048.44,4965.77,8025.1,5030.26C8025.1,5030.26,8448.14,5183.71,8448.14,5183.71C8479.1,5098.21,8500.65,5019.49,8515.51,4951.77C8529.26,4889.18,8537.68,4833.43,8542.61,4788.81L8542.61,4788.81C8542.61,4788.81,8319.21,4762.48,8095.81,4736.15Z"></path>
+<path data-component="svg__section" data-section-id="s_96" data-section-name="225" class="block map-section" d="M7501.25,3651.5L7501.25,4028.5L7931.25,4028.5L7931.25,3651.5L7501.25,3651.5Z"></path>
+<path data-component="svg__section" data-section-id="s_95" data-section-name="128" class="block is-available map-section" d="M6470.57,4622.35C6459.63,4628.91,6448.69,4635.47,6448.69,4635.47C6429.33,4645.65,6407.86,4654.12,6383.95,4661.41C6377.67,4663.32,6371.23,4665.15,6364.6,4666.91C6364.6,4666.91,6589.11,5486.65,6589.11,5486.65C6603.7,5482.72,6617.86,5478.66,6631.62,5474.47C6710.16,5450.54,6779.99,5421.47,6843.57,5388.12C6887.24,5365.2,6928.93,5339.5,6967.71,5312.21L6967.71,5312.21C6967.71,5312.21,6719.14,4967.28,6470.57,4622.35Z"></path>
+<path data-component="svg__section" data-section-id="s_98" data-section-name="419" class="block is-available map-section" d="M7900.06,1378.8C7826.8,1480.18,7753.55,1581.55,7753.55,1581.55C7766.32,1590.78,7779.98,1600.78,7792.76,1610.54C7810.88,1624.37,7828.93,1638.71,7847.1,1653.69C7877.07,1678.44,7907.03,1704.7,7937.11,1732.75C7980.64,1773.35,8024.46,1817.7,8068.73,1866.39C8073.92,1872.1,8079.06,1877.82,8084.14,1883.54C8084.14,1883.54,8273.47,1720.26,8273.47,1720.26C8266.97,1712.91,8260.39,1705.57,8253.72,1698.24C8204.59,1644.21,8155.95,1594.99,8107.64,1549.93C8073.76,1518.36,8040.03,1488.79,8006.24,1460.89C7985.58,1443.85,7965.1,1427.59,7944.51,1411.86L7944.51,1411.86C7929.95,1400.73,7914.62,1389.32,7900.06,1378.8Z"></path>
+<path data-component="svg__section" data-section-id="s_97" data-section-name="129" class="block is-available map-section" d="M6364.61,4666.9C6333.59,4675.07,6297.74,4681.91,6258.27,4687.81C6227.38,4692.45,6185.3,4698.44,6133.2,4705.04C6133.2,4705.04,6238.1,5548.5,6238.1,5548.5C6299.34,5540.77,6348.53,5533.75,6384.2,5528.38C6460.57,5516.94,6528.96,5502.87,6589.16,5486.7L6589.16,5486.7C6589.16,5486.7,6476.88,5076.8,6364.61,4666.9Z"></path>
+<path data-component="svg__section" data-section-id="s_160" data-section-name="344" class="block is-available map-section" d="M2750.83,5733.25C2618.69,5915.35,2486.55,6097.46,2486.55,6097.46C2517.53,6119.85,2548.49,6140.7,2579.52,6160.19C2594.0,6169.29,2608.51,6178.09,2623.03,6186.62C2702.7,6233.38,2782.92,6271.65,2864.78,6303.74C2873.5,6307.16,2883.15,6310.93,2891.91,6314.21C2891.91,6314.21,3066.01,5898.66,3066.01,5898.66C3054.0,5894.32,3041.02,5889.49,3029.11,5884.82C2957.75,5856.84,2888.09,5822.6,2818.83,5779.1L2818.83,5779.1C2796.13,5764.85,2773.48,5749.6,2750.83,5733.25Z"></path>
+<path data-component="svg__section" data-section-id="s_161" data-section-name="443" class="block is-available map-section" d="M2892.32,6314.3C2834.64,6451.78,2776.95,6589.26,2776.95,6589.26C2884.07,6651.55,2994.98,6709.68,3109.36,6763.37C3150.44,6782.66,3192.85,6801.83,3234.81,6819.96C3234.81,6819.96,3300.09,6424.46,3300.09,6424.46C3206.5,6405.96,3117.55,6385.7,3031.49,6360.47L3031.49,6360.47C2984.38,6346.67,2938.07,6331.4,2892.32,6314.3Z"></path>
+<path data-component="svg__section" data-section-id="s_162" data-section-name="345" class="block is-available map-section" d="M2497.7,5502.1C2327.07,5648.82,2156.45,5795.54,2156.45,5795.54C2158.11,5797.41,2168.72,5809.26,2172.4,5813.31C2216.7,5862.01,2260.52,5906.36,2303.99,5946.89C2310.11,5952.6,2348.23,5987.06,2361.16,5998.22C2372.1,6007.68,2477.71,6091.19,2486.46,6097.51C2486.46,6097.51,2750.81,5733.31,2750.81,5733.31C2741.29,5726.43,2730.97,5718.76,2721.45,5711.48C2707.79,5701.04,2694.11,5690.18,2680.42,5678.88C2657.31,5659.8,2634.15,5639.48,2610.88,5617.78C2575.98,5585.24,2540.85,5549.62,2505.32,5510.55L2505.32,5510.55C2502.76,5507.74,2500.22,5504.92,2497.7,5502.1Z"></path>
+<path data-component="svg__section" data-section-id="s_163" data-section-name="346" class="block is-available map-section" d="M2340.89,5290.8C2140.19,5393.54,1939.5,5496.29,1939.5,5496.29C1944.03,5504.03,1954.65,5521.72,1954.65,5521.72C1974.16,5553.88,1995.09,5586.25,2017.62,5618.74C2031.02,5638.08,2044.92,5657.35,2059.33,5676.55C2074.23,5696.4,2089.74,5716.24,2105.86,5736.02C2121.87,5755.66,2139.19,5776.06,2156.46,5795.56C2156.46,5795.56,2497.71,5502.16,2497.71,5502.16C2469.65,5470.76,2443.07,5438.17,2419.2,5406.38C2408.16,5391.68,2397.56,5376.97,2387.36,5362.27L2387.36,5362.27C2370.8,5338.38,2355.33,5314.53,2340.89,5290.8Z"></path>
+<path data-component="svg__section" data-section-id="s_164" data-section-name="444" class="block is-available map-section" d="M2636.86,6194.65C2637.91,6195.26,2516.35,6424.4,2516.35,6424.4C2600.15,6481.96,2687.63,6537.36,2776.91,6589.31C2776.91,6589.31,2891.91,6314.16,2891.91,6314.16C2883.02,6310.83,2873.64,6307.21,2864.79,6303.74L2864.79,6303.74C2787.66,6273.5,2711.99,6237.79,2636.86,6194.65Z"></path>
+<path data-component="svg__section" data-section-id="s_165" data-section-name="347" class="block is-available map-section" d="M2222.9,5049.05C2012.05,5127.58,1801.2,5206.11,1801.2,5206.11C1822.19,5261.73,1846.69,5319.02,1875.72,5377.86C1894.8,5416.52,1916.4,5456.68,1939.56,5496.31C1939.56,5496.31,2340.91,5290.76,2340.91,5290.76C2340.53,5290.13,2339.61,5288.72,2339.23,5288.09C2316.84,5251.15,2296.93,5214.54,2279.23,5178.68L2279.23,5178.68C2257.21,5134.06,2238.59,5090.58,2222.9,5049.05Z"></path>
+<path data-component="svg__section" data-section-id="s_201" data-section-name="122" class="block map-section" d="M7000.09,3346.7L7001.4,3679.79L7256.29,3679.79L7256.2,3346.7L7000.09,3346.7Z"></path>
+<path data-component="svg__section" data-section-id="s_322" data-section-name="A4" class="block is-available map-section" d="M5545.34,3235.23C5387.42,3235.23,5277.61,3235.23,5119.69,3235.23C5119.69,3294.04,5119.69,3579.48,5119.69,3638.29C5277.61,3638.29,5387.42,3638.29,5545.34,3638.29L5545.34,3638.29C5545.34,3579.48,5545.34,3294.04,5545.34,3235.23Z"></path>
+<path data-component="svg__section" data-section-id="s_169" data-section-name="B1" class="block is-available map-section" d="M5119.69,4444.39L4782.14,4444.39L4782.14,4479.17L4760.14,4502.17L4760.14,4617.17L4804.14,4617.17L4804.14,4655.82C4921.46,4655.82,5038.79,4655.82,5119.69,4655.82L5119.69,4655.82C5119.69,4585.78,5119.69,4515.09,5119.69,4444.39Z"></path>
+<path data-component="svg__section" data-section-id="s_202" data-section-name="123" class="block map-section" d="M7000.81,3679.8L7000.81,3999.9L7256.28,3999.9L7256.28,3679.8L7000.81,3679.8Z"></path>
+<path data-component="svg__section" data-section-id="s_323" data-section-name="B3" class="block is-available map-section" d="M5119.69,3638.29C4853.41,3638.29,5004.42,3638.29,4738.14,3638.29C4738.14,3765.81,4738.14,3913.81,4738.14,4041.34C5004.42,4041.34,4853.41,4041.34,5119.69,4041.34L5119.69,4041.34C5119.69,3913.81,5119.69,3765.81,5119.69,3638.29Z"></path>
+<path data-component="svg__section" data-section-id="s_324" data-section-name="A5" class="block is-available map-section" d="M5347.24,3016.46L5119.69,3016.33L5119.69,3235.23L5545.24,3235.23L5545.24,3050.96L5347.24,3050.96L5347.24,3016.46Z"></path>
+<path data-component="svg__section" data-section-id="s_325" data-section-name="B4" class="block is-available map-section" d="M5119.69,3235.23C4888.04,3235.23,4835.09,3235.23,4782.14,3235.23L4782.14,3235.23L4782.14,3316.01L4738.09,3362.01C4738.09,3454.03,4738.09,3546.04,4738.09,3638.29C4988.52,3638.29,4869.27,3638.29,5119.69,3638.29L5119.69,3638.29C5119.69,3587.8,5119.69,3293.4,5119.69,3235.23Z"></path>
+<path data-component="svg__section" data-section-id="s_326" data-section-name="B5" class="block is-available map-section" d="M5119.69,3016.38C4998.22,3016.38,4890.18,3016.38,4782.14,3016.38L4782.14,3016.38L4782.14,3062.46L4760.14,3062.46L4760.14,3177.46L4782.14,3200.46L4782.01,3235.23C4890.11,3235.23,4998.22,3235.23,5119.69,3235.23L5119.69,3235.23C5119.69,3134.8,5119.69,3116.81,5119.69,3016.38Z"></path>
+<path data-component="svg__section" data-section-id="s_81" data-section-name="414" class="block is-available map-section" d="M5763.56,520.25C5744.7,822.9,5725.85,1125.55,5725.85,1125.55C5858.16,1132.52,5993.04,1141.32,6121.89,1151.61C6121.89,1151.61,6174.82,592.303,6174.82,592.303L6174.82,592.303C6040.66,562.713,5902.8,538.49,5763.56,520.25Z"></path>
+<path data-component="svg__section" data-section-id="s_80" data-section-name="413" class="block is-available map-section" d="M5338.8,483.4C5330.9,796.828,5323.0,1110.26,5323.0,1110.26C5451.43,1113.1,5589.01,1118.25,5726.34,1125.48C5726.34,1125.48,5763.59,520.263,5763.59,520.263L5763.59,520.263C5624.57,502.063,5482.14,489.68,5338.8,483.4Z"></path>
+<path data-component="svg__section" data-section-id="s_83" data-section-name="323" class="block map-section" d="M8542.61,2890.05C8319.2,2916.43,8095.8,2942.8,8095.8,2942.8C8098.26,2966.02,8099.2,2984.9,8099.21,2996.31C8099.21,3022.6,8099.23,3122.85,8099.24,3245.56C8099.24,3245.56,8549.25,3245.56,8549.25,3245.56C8549.24,3122.74,8549.23,3022.37,8549.22,2995.98L8549.22,2995.98C8549.19,2974.55,8547.82,2937.59,8542.61,2890.05Z"></path>
+<path data-component="svg__section" data-section-id="s_82" data-section-name="221" class="block is-available map-section" d="M7494.59,2321.45C7372.62,2425.08,7250.65,2528.72,7250.65,2528.72C7254.35,2532.85,7258.04,2537.02,7261.74,2541.25C7278.2,2560.07,7293.54,2579.45,7307.82,2599.27C7307.82,2599.27,7325.34,2624.51,7325.34,2624.51C7334.86,2638.79,7343.86,2653.25,7352.39,2667.85C7365.2,2689.73,7376.89,2711.9,7387.59,2734.12C7387.65,2734.24,7388.27,2735.31,7388.33,2735.43C7388.33,2735.43,7673.93,2591.18,7673.93,2591.18C7660.24,2563.07,7644.87,2534.09,7628.66,2506.35C7616.98,2486.37,7604.64,2466.56,7589.97,2444.56C7589.97,2444.56,7567.43,2412.17,7567.43,2412.17C7547.35,2384.31,7525.77,2357.04,7502.59,2330.53L7502.59,2330.53C7499.92,2327.48,7497.26,2324.46,7494.59,2321.45Z"></path>
+<path data-component="svg__section" data-section-id="s_89" data-section-name="325" class="block map-section" d="M8099.36,3641.45C8099.37,3712.17,8099.31,4002.5,8099.3,4037.34C8099.3,4037.34,8289.0,4037.34,8478.69,4037.34C8478.68,4019.68,8478.67,4002.02,8478.66,3984.36C8451.74,3974.37,8424.82,3964.37,8397.9,3954.38C8397.9,3839.43,8397.9,3724.48,8397.9,3724.48C8438.28,3709.47,8478.66,3694.46,8478.66,3694.46C8478.68,3667.96,8478.69,3641.45,8478.69,3641.45L8478.69,3641.45C8352.25,3641.45,8225.8,3641.45,8099.36,3641.45Z"></path>
+<path data-component="svg__section" data-section-id="s_88" data-section-name="416" class="block is-available map-section" d="M6596.91,706.2C6563.2,948.725,6529.5,1191.25,6529.5,1191.25C6643.87,1204.74,6748.04,1219.47,6832.8,1234.8C6864.53,1240.54,6895.28,1246.18,6925.95,1252.15C6925.95,1252.15,6998.65,856.463,6998.65,856.463C6880.95,805.903,6759.88,759.943,6635.8,718.883L6635.8,718.883C6623.22,714.723,6609.55,710.27,6596.91,706.2Z"></path>
+<path data-component="svg__section" data-section-id="s_85" data-section-name="222" class="block map-section" d="M7673.89,2591.1C7531.04,2663.24,7388.2,2735.38,7388.2,2735.38C7401.45,2763.06,7413.18,2790.87,7423.5,2818.41C7423.5,2818.41,7434.44,2848.88,7434.44,2848.88C7447.02,2885.64,7457.24,2921.72,7465.54,2956.28C7466.54,2960.43,7467.79,2965.63,7468.73,2969.73C7468.73,2969.73,7886.73,2868.83,7886.73,2868.83C7885.8,2864.79,7884.61,2859.78,7883.63,2855.72C7871.97,2807.25,7857.51,2756.6,7839.01,2703.13C7839.01,2703.13,7734.86,2738.5,7734.86,2738.5C7731.11,2727.7,7727.18,2716.84,7723.09,2705.95C7709.31,2669.27,7693.69,2632.25,7675.96,2595.38L7675.96,2595.38C7675.27,2593.95,7674.58,2592.52,7673.89,2591.1Z"></path>
+<path data-component="svg__section" data-section-id="s_84" data-section-name="324" class="block map-section" d="M8099.25,3245.6C8099.26,3371.41,8099.28,3640.65,8099.28,3641.49C8099.28,3641.49,8549.29,3641.49,8549.29,3641.49C8549.29,3640.64,8549.17,3371.43,8549.15,3245.6L8549.15,3245.6C8549.15,3245.6,8324.2,3245.6,8099.25,3245.6Z"></path>
+<path data-component="svg__section" data-section-id="s_87" data-section-name="223" class="block map-section" d="M7886.7,2868.85C7677.67,2919.25,7468.65,2969.64,7468.65,2969.64C7482.6,3030.5,7490.65,3086.16,7495.27,3131.61C7495.27,3131.61,7498.3,3186.48,7501.34,3241.34C7501.34,3256.97,7501.33,3272.6,7501.33,3288.23C7716.33,3288.21,7931.33,3288.18,7931.33,3288.18C7931.35,3258.95,7931.37,3229.72,7931.37,3229.72C7927.23,3159.03,7923.08,3088.34,7923.08,3088.34L7923.08,3088.34C7916.86,3026.86,7905.86,2951.39,7886.7,2868.85Z"></path>
+<path data-component="svg__section" data-section-id="s_86" data-section-name="415" class="block is-available map-section" d="M6174.9,592.3C6148.6,872.003,6122.3,1151.71,6122.3,1151.71C6266.46,1163.23,6405.05,1176.47,6529.6,1191.15C6529.6,1191.15,6597.03,706.253,6597.03,706.253C6470.52,665.643,6340.94,630.083,6208.66,599.903L6208.66,599.903C6197.74,597.413,6185.86,594.71,6174.9,592.3Z"></path>
+<path data-component="svg__section" data-section-id="s_38" data-section-name="CLUB 109" class="block is-available map-section" d="M4340.19,2095.9C4267.07,2102.07,4200.13,2108.63,4140.05,2115.12C4140.05,2115.12,4230.43,2960.38,4230.43,2960.38C4290.77,2953.86,4360.03,2947.12,4435.21,2940.99C4435.21,2940.99,4374.13,2193.38,4374.13,2193.38C4366.37,2194.01,4357.65,2194.78,4350.02,2195.42L4350.02,2195.42C4350.02,2195.42,4345.1,2145.66,4340.19,2095.9Z"></path>
+<path data-component="svg__section" data-section-id="s_37" data-section-name="308" class="block is-available map-section" d="M3699.56,1192.65C3589.34,1205.8,3490.35,1219.99,3408.19,1234.84C3371.61,1241.46,3334.78,1248.36,3299.6,1255.31C3299.6,1255.31,3373.71,1699.36,3373.71,1699.36C3410.77,1691.95,3449.52,1684.66,3488.32,1677.64C3564.05,1663.95,3654.79,1650.91,3755.69,1638.81L3755.69,1638.81C3755.69,1638.81,3727.63,1415.73,3699.56,1192.65Z"></path>
+<path data-component="svg__section" data-section-id="s_299" data-section-name="A1" class="block is-available map-section" d="M5545.53,4444.39L5119.69,4444.39L5119.69,4655.88L5347.24,4655.83L5347.24,4628.67L5545.53,4628.67L5545.53,4444.39Z"></path>
+<path data-component="svg__section" data-section-id="s_39" data-section-name="CLUB 110" class="block is-available map-section" d="M4671.56,2174.15C4609.81,2177.22,4412.89,2190.23,4374.1,2193.4C4374.1,2193.4,4435.28,2941.03,4435.28,2941.03C4517.69,2934.33,4610.38,2927.98,4709.36,2923.14L4709.36,2923.14C4709.36,2923.14,4690.46,2548.65,4671.56,2174.15Z"></path>
+<path data-component="svg__section" data-section-id="s_214" data-section-name="119" class="block is-available map-section" d="M6966.86,2366.65C6805.29,2591.42,6643.34,2816.76,6481.4,3042.1L6481.4,3042.1C6495.38,3050.58,6509.36,3059.05,6525.93,3075.58C6550.41,3041.86,6574.89,3008.15,6599.37,2974.43C6618.89,2993.24,6635.8,3013.26,6652.71,3033.29L6652.71,3033.29C6849.89,2900.14,7047.08,2766.98,7236.3,2637.49C7215.6,2609.77,7194.9,2582.04,7174.2,2554.32L7174.2,2554.32L7080.13,2456.05C7039.67,2423.04,6999.21,2390.02,6999.21,2390.02C6989.33,2382.87,6979.45,2375.71,6979.45,2375.71L6979.45,2375.71C6975.56,2372.9,6970.8,2369.42,6966.86,2366.65Z"></path>
+<path data-component="svg__section" data-section-id="s_215" data-section-name="120" class="block map-section" d="M6934.04,3106.57C6928.71,3082.61,6921.78,3059.07,6913.25,3036.05C6904.73,3013.04,6894.68,2990.67,6883.11,2969.02C6871.55,2947.37,6856.74,2924.6,6842.35,2904.72C6853.06,2897.05,7236.32,2637.45,7236.32,2637.45C7242.97,2646.38,7249.63,2655.31,7256.28,2664.24L7256.28,2664.24L7322.07,2780.78L7369.46,2898.44L7393.6,2982.26C7394.59,2986.32,7395.58,2990.38,7396.57,2994.44C7396.57,2994.44,7184.58,3046.25,6972.6,3098.06L6972.6,3098.06C6959.75,3100.9,6946.89,3103.73,6934.04,3106.57Z"></path>
+<path data-component="svg__section" data-section-id="s_216" data-section-name="121" class="block map-section" d="M6972.6,3098.06C7107.59,3065.06,7261.63,3027.45,7396.62,2994.45C7397.23,2997.09,7397.85,2999.72,7397.85,2999.72C7410.54,3051.98,7419.0,3102.91,7424.27,3147.68C7424.27,3147.68,7424.87,3152.87,7425.47,3158.05C7425.47,3158.05,7427.49,3179.95,7429.5,3201.84C7429.87,3207.27,7430.23,3212.69,7430.23,3212.69C7431.55,3232.5,7432.27,3249.77,7432.64,3263.81C7432.64,3263.81,7393.54,3263.81,7354.43,3263.81C7354.43,3263.81,7319.5,3305.33,7284.56,3346.86C7284.56,3346.86,7142.46,3346.86,7000.37,3346.86L7000.37,3346.86C7001.55,3262.25,6989.9,3160.27,6972.6,3098.06Z"></path>
+<path data-component="svg__section" data-section-id="s_219" data-section-name="127" class="block is-available map-section" d="M6661.58,4647.66L6661.58,4647.66C6640.27,4668.27,6618.96,4688.89,6593.63,4709.55C6565.77,4677.04,6537.92,4644.53,6510.06,4612.01L6510.06,4612.01C6500.65,4621.22,6491.24,4630.42,6479.9,4636.01C6680.2,4914.06,6967.69,5312.18,6967.69,5312.18C6971.75,5309.32,6975.79,5306.43,6979.8,5303.52C6979.8,5303.52,6990.19,5296.0,7000.58,5288.48C7028.7,5265.37,7056.83,5242.27,7084.95,5219.16L7084.95,5219.16L7178.25,5120.19C7207.6,5080.66,7236.95,5041.12,7236.95,5041.12L7236.95,5041.12C7048.81,4912.31,6855.2,4779.99,6661.58,4647.66Z"></path>
+<path data-component="svg__section" data-section-id="s_34" data-section-name="306" class="block is-available map-section" d="M2891.01,1365.85C2882.25,1369.13,2873.52,1372.48,2864.8,1375.9C2788.89,1405.66,2714.44,1440.71,2640.53,1482.89C2619.6,1494.88,2599.51,1506.9,2579.47,1519.5C2548.47,1538.95,2516.76,1560.38,2485.8,1582.76C2485.8,1582.76,2750.06,1947.06,2750.06,1947.06C2772.74,1930.69,2796.06,1914.83,2818.78,1900.56C2888.04,1857.06,2957.7,1822.82,3029.06,1794.84C3040.97,1790.17,3052.93,1785.67,3064.94,1781.33L3064.94,1781.33C3064.94,1781.33,2977.98,1573.59,2891.01,1365.85Z"></path>
+<path data-component="svg__section" data-section-id="s_33" data-section-name="107" class="block is-available map-section" d="M4001.55,2131.3C3940.92,2138.97,3892.23,2145.92,3856.84,2151.24C3779.75,2162.78,3710.76,2177.08,3650.2,2193.43C3650.2,2193.43,3874.99,3013.23,3874.99,3013.23C3906.63,3004.74,3942.34,2997.95,3982.88,2991.89C4013.33,2987.31,4054.67,2981.43,4105.82,2974.94L4105.82,2974.94C4105.82,2974.94,4053.69,2553.12,4001.55,2131.3Z"></path>
+<path data-component="svg__section" data-section-id="s_36" data-section-name="307" class="block is-available map-section" d="M3299.63,1255.3C3206.23,1273.77,3117.41,1294.0,3031.44,1319.19C2984.18,1333.06,2936.79,1348.73,2891.0,1365.86C2891.0,1365.86,3065.05,1781.26,3065.05,1781.26C3095.38,1770.33,3126.93,1760.14,3158.05,1751.02C3227.36,1730.7,3298.87,1714.3,3373.66,1699.33L3373.66,1699.33C3373.66,1699.33,3336.65,1477.31,3299.63,1255.3Z"></path>
+<path data-component="svg__section" data-section-id="s_35" data-section-name="108" class="block is-available map-section" d="M4140.08,2115.1C4089.59,2120.56,4041.91,2126.2,4001.55,2131.3C4001.55,2131.3,4105.8,2974.95,4105.8,2974.95C4142.2,2970.34,4185.67,2965.11,4231.58,2960.15L4231.58,2960.15C4231.58,2960.15,4185.83,2537.63,4140.08,2115.1Z"></path>
+<path data-component="svg__section" data-section-id="s_30" data-section-name="304" class="block is-available map-section" d="M2155.81,1884.9C2118.53,1927.0,2084.21,1969.55,2052.64,2012.11C2028.45,2044.7,2005.88,2077.35,1984.92,2109.68C1972.47,2128.89,1942.09,2178.9,1938.95,2184.26C1938.95,2184.26,2340.25,2390.06,2340.25,2390.06C2347.26,2378.55,2354.95,2366.12,2362.44,2354.57C2378.48,2329.82,2395.66,2304.98,2414.06,2280.17C2439.31,2246.12,2466.85,2212.13,2496.87,2178.51L2496.87,2178.51C2496.87,2178.51,2326.34,2031.71,2155.81,1884.9Z"></path>
+<path data-component="svg__section" data-section-id="s_32" data-section-name="106" class="block is-available map-section" d="M3650.35,2193.45C3636.34,2197.25,3622.73,2201.16,3609.49,2205.2C3530.96,2229.13,3461.13,2258.17,3397.28,2291.68C3353.29,2314.79,3312.24,2339.96,3273.4,2367.29C3273.4,2367.29,3769.59,3057.75,3769.59,3057.75C3776.9,3052.95,3784.53,3048.46,3792.5,3044.27C3811.87,3034.1,3833.33,3025.63,3857.24,3018.34C3862.72,3016.67,3869.34,3014.83,3875.08,3013.28L3875.08,3013.28C3875.08,3013.28,3762.71,2603.36,3650.35,2193.45Z"></path>
+<path data-component="svg__section" data-section-id="s_31" data-section-name="305" class="block is-available map-section" d="M2485.81,1582.7C2470.44,1593.82,2455.07,1605.33,2439.68,1617.23C2409.45,1640.59,2379.2,1665.52,2348.71,1692.29C2331.03,1707.85,2313.4,1723.88,2295.8,1740.46C2255.0,1778.92,2213.91,1820.73,2172.31,1866.48C2166.98,1872.35,2161.11,1879.02,2155.9,1884.91C2155.9,1884.91,2496.91,2178.56,2496.91,2178.56C2499.47,2175.69,2502.71,2171.98,2505.31,2169.12C2538.65,2132.46,2571.64,2098.84,2604.41,2067.95C2618.21,2054.94,2631.97,2042.42,2645.7,2030.36C2668.88,2010.0,2691.97,1990.96,2715.04,1973.11C2726.67,1964.11,2738.3,1955.42,2749.92,1947.02L2749.92,1947.02C2749.92,1947.02,2617.87,1764.86,2485.81,1582.7Z"></path>
+<path data-component="svg__section" data-section-id="s_27" data-section-name="104" class="block is-available map-section" d="M3004.37,2638.1L2982.83,2667.06L2916.1,2786.57L2869.77,2903.88L2844.1,2995.66L3485.22,3152.75L3495.63,3116.1L3513.83,3070.02L3532.6,3036.18L3508.84,3027.03L3525.21,2994.81L3004.37,2638.1Z"></path>
+<path data-component="svg__section" data-section-id="s_26" data-section-name="103" class="block is-available map-section" d="M2843.6,2995.6C2843.16,2997.43,2842.71,2999.26,2842.71,2999.26C2829.99,3051.44,2821.53,3102.29,2816.26,3146.94C2816.26,3146.94,2810.15,3213.35,2810.15,3213.35C2807.18,3258.37,2807.32,3289.99,2807.45,3300.08C2807.45,3300.08,2807.53,3323.92,2807.61,3347.76C3137.54,3347.76,3467.46,3347.76,3467.46,3347.76C3467.48,3321.8,3467.5,3295.85,3467.5,3295.85C3467.45,3292.06,3467.4,3277.63,3468.95,3254.19C3468.95,3254.19,3471.74,3224.47,3471.74,3224.47C3474.17,3203.79,3478.01,3180.28,3484.69,3152.72L3484.69,3152.72C3484.69,3152.72,3164.15,3074.16,2843.6,2995.6Z"></path>
+<path data-component="svg__section" data-section-id="s_100" data-section-name="226" class="block map-section" d="M7501.28,4028.5L7500.7,4391.44L7930.84,4391.44L7931.18,4028.5L7501.28,4028.5Z"></path>
+<path data-component="svg__section" data-section-id="s_29" data-section-name="105" class="block is-available map-section" d="M3273.43,2367.2L3240.5,2390.83L3155.79,2460.48L3062.65,2559.33L3004.25,2638.09L3525.15,2994.78L3508.8,3026.94L3692.77,3098.19L3728.8,3091.91L3737.37,3082.82L3769.57,3057.64L3273.43,2367.2Z"></path>
+<path data-component="svg__section" data-section-id="s_101" data-section-name="420" class="block map-section" d="M8273.51,1720.2C8178.8,1801.85,8084.1,1883.5,8084.1,1883.5C8118.92,1922.78,8151.86,1963.28,8181.76,2003.09C8196.28,2022.44,8210.18,2041.72,8223.54,2060.99C8246.08,2093.51,8267.1,2126.01,8286.68,2158.31C8291.69,2166.58,8296.6,2174.83,8301.42,2183.06C8301.42,2183.06,8524.14,2068.74,8524.14,2068.74C8516.48,2055.47,8508.61,2042.15,8500.52,2028.81C8478.32,1992.17,8454.54,1955.38,8429.03,1918.57C8413.9,1896.77,8398.16,1874.94,8381.7,1853.02L8381.7,1853.02C8348.48,1808.76,8312.08,1763.85,8273.51,1720.2Z"></path>
+<path data-component="svg__section" data-section-id="s_343" data-section-name="PIT D" class="block is-available map-section" d="M5913.3,3393.66L5739.29,3741.26L5675.3,3741.26L5598.53,3780.85L5571.47,3780.85L5545.3,3794.8C5545.3,3593.08,5545.3,3391.35,5545.3,3143.08C5545.3,3143.08,5913.3,3143.08,5913.3,3143.08L5913.3,3143.08C5913.3,3257.35,5913.3,3325.5,5913.3,3393.66Z"></path>
+<path data-component="svg__section" data-section-id="s_28" data-section-name="303" class="block is-available map-section" d="M1939.04,2184.25C1915.83,2223.96,1894.82,2263.23,1875.74,2301.89C1848.37,2357.33,1825.05,2411.43,1805.16,2463.28C1804.0,2466.32,1802.84,2469.35,1801.7,2472.37C1801.7,2472.37,2223.17,2630.04,2223.17,2630.04C2238.82,2588.69,2257.36,2545.42,2279.27,2501.01C2295.88,2467.36,2314.43,2433.06,2335.15,2398.43C2336.83,2395.63,2338.52,2392.82,2340.23,2390.01L2340.23,2390.01C2340.23,2390.01,2139.64,2287.13,1939.04,2184.25Z"></path>
+<path data-component="svg__section" data-section-id="s_102" data-section-name="227" class="block map-section" d="M7500.73,4391.4C7498.97,4459.42,7497.21,4527.43,7497.21,4527.43C7496.25,4537.75,7495.28,4548.07,7495.28,4548.07C7490.66,4593.55,7482.62,4649.24,7468.65,4710.17C7468.65,4710.17,7886.72,4810.81,7886.72,4810.81C7886.96,4809.78,7887.2,4808.74,7887.44,4807.71C7906.15,4726.36,7916.94,4652.07,7923.24,4589.78C7923.24,4589.78,7924.96,4571.42,7926.68,4553.07C7928.08,4499.19,7929.48,4445.31,7930.88,4391.43L7930.88,4391.43C7787.5,4391.42,7644.11,4391.41,7500.73,4391.4Z"></path>
+<path data-component="svg__section" data-section-id="s_103" data-section-name="130" class="block is-available map-section" d="M6133.21,4705.0C6096.8,4709.6,6054.5,4714.69,6008.75,4719.64C6008.75,4719.64,6100.73,5564.6,6100.73,5564.6C6151.11,5559.15,6197.73,5553.65,6238.11,5548.55L6238.11,5548.55C6238.11,5548.55,6185.66,5126.77,6133.21,4705.0Z"></path>
+<path data-component="svg__section" data-section-id="s_104" data-section-name="329" class="block map-section" d="M8025.11,5030.25C8023.19,5035.55,8020.86,5041.82,8018.84,5047.18C8003.0,5089.27,7984.16,5133.38,7961.81,5178.67C7945.2,5212.32,7926.64,5246.62,7905.92,5281.25C7904.03,5284.4,7902.13,5287.56,7900.2,5290.72C7900.2,5290.72,8301.61,5496.19,8301.61,5496.19C8324.97,5456.28,8346.14,5416.73,8365.35,5377.82C8394.61,5318.53,8419.27,5260.78,8440.04,5205.61C8442.68,5198.58,8445.54,5190.71,8448.06,5183.76L8448.06,5183.76C8448.06,5183.76,8236.58,5107.0,8025.11,5030.25Z"></path>
+<path data-component="svg__section" data-section-id="s_346" data-section-name="PIT A" class="block is-available map-section" d="M6496.71,4473.69L6496.71,4473.69C6496.71,4479.27,6496.71,4484.86,6496.71,4536.52C6164.92,4536.52,6039.11,4536.52,5913.3,4536.52L5913.3,4536.52L5913.3,4285.66L5943.11,4345.2L6035.39,4159.73L5981.18,3938.06L6122.46,3938.06L6223.59,4039.18L6223.59,4338.35L6496.71,4473.69Z"></path>
+<path data-component="svg__section" data-section-id="s_105" data-section-name="421" class="block map-section" d="M8524.21,2068.7C8412.63,2125.7,8301.05,2182.7,8301.05,2182.7C8324.29,2222.46,8346.2,2263.04,8365.33,2301.77C8394.63,2361.13,8419.29,2418.89,8440.03,2474.01C8442.95,2481.76,8445.08,2487.21,8447.85,2494.85C8447.85,2494.85,8684.0,2413.04,8684.0,2413.04C8680.77,2404.09,8677.45,2395.07,8674.03,2385.99C8650.57,2323.63,8622.68,2258.3,8589.52,2191.12L8589.52,2191.12C8569.77,2151.12,8547.81,2109.65,8524.21,2068.7Z"></path>
+<path data-component="svg__section" data-section-id="s_226" data-section-name="124" class="block map-section" d="M7000.75,3999.9L7000.75,4331.7L7256.26,4331.7L7256.26,3999.9L7000.75,3999.9Z"></path>
+<path data-component="svg__section" data-section-id="s_347" data-section-name="PIT B" class="block is-available map-section" d="M5913.3,3393.65L5943.11,3334.11L6035.39,3519.59L5981.18,3741.26L6122.46,3741.26L6223.59,3640.14L6223.59,3340.96L6496.71,3205.63C6496.71,3200.15,6496.71,3194.67,6496.71,3143.08C6164.92,3143.08,6039.11,3143.08,5913.3,3143.08L5913.3,3143.08L5913.3,3393.65Z"></path>
+<path data-component="svg__section" data-section-id="s_106" data-section-name="330" class="block is-available map-section" d="M7900.31,5290.7C7893.51,5301.85,7885.89,5313.92,7878.63,5325.12C7862.58,5349.87,7845.4,5374.71,7827.01,5399.52C7801.49,5433.92,7773.65,5468.26,7743.25,5502.21C7743.25,5502.21,8084.54,5795.63,8084.54,5795.63C8122.1,5753.27,8156.66,5710.47,8188.49,5667.55C8212.64,5634.97,8235.16,5602.41,8256.24,5569.91C8268.73,5550.63,8298.64,5501.29,8301.61,5496.21L8301.61,5496.21C8301.61,5496.21,8100.96,5393.45,7900.31,5290.7Z"></path>
+<path data-component="svg__section" data-section-id="s_227" data-section-name="125" class="block map-section" d="M7000.67,4331.7C7005.04,4468.14,6982.69,4538.71,6973.06,4585.57C6973.06,4585.57,7195.35,4634.89,7396.84,4684.22C7397.37,4682.06,7397.89,4679.91,7397.89,4679.91C7410.58,4627.71,7419.03,4576.81,7424.27,4532.18C7424.27,4532.18,7424.89,4526.94,7425.51,4521.7C7427.53,4499.74,7429.55,4477.78,7429.55,4477.78C7429.91,4472.33,7430.27,4466.89,7430.27,4466.89C7431.54,4447.84,7432.25,4430.97,7432.64,4416.79C7432.64,4416.79,7394.46,4416.79,7356.29,4416.79C7320.88,4374.25,7285.46,4331.7,7285.46,4331.7L7285.46,4331.7C7197.46,4331.7,7088.67,4331.7,7000.67,4331.7Z"></path>
+<path data-component="svg__section" data-section-id="s_348" data-section-name="A3" class="block is-available map-section" d="M5546.43,3638.34C5419.21,3638.34,5246.99,3638.34,5119.76,3638.34C5119.76,3772.65,5119.76,3906.95,5119.76,4041.26C5246.99,4041.26,5419.21,4041.26,5546.43,4041.26L5546.43,4041.26C5546.43,3906.95,5546.43,3772.65,5546.43,3638.34Z"></path>
+<path data-component="svg__section" data-section-id="s_107" data-section-name="228" class="block map-section" d="M7468.65,4710.1C7462.68,4735.92,7455.38,4763.77,7447.14,4791.1C7443.22,4804.02,7439.04,4817.05,7434.25,4831.04C7422.54,4865.13,7409.24,4898.78,7393.73,4932.34C7391.88,4936.34,7389.57,4941.44,7387.65,4945.43C7387.65,4945.43,7673.4,5089.58,7673.4,5089.58C7676.91,5082.32,7680.76,5074.0,7684.11,5066.74C7703.65,5024.54,7720.29,4983.28,7735.1,4940.63C7735.1,4940.63,7838.6,4977.88,7838.6,4977.88C7845.63,4957.61,7852.71,4935.47,7858.73,4915.53C7869.46,4880.12,7878.9,4844.49,7886.75,4810.83L7886.75,4810.83C7886.75,4810.83,7677.7,4760.47,7468.65,4710.1Z"></path>
+<path data-component="svg__section" data-section-id="s_228" data-section-name="126" class="block map-section" d="M6842.69,4771.1C6856.23,4750.79,6868.84,4729.89,6880.48,4708.44C6892.12,4686.99,6902.77,4665.05,6912.42,4642.63C6922.06,4620.21,6930.35,4600.57,6937.92,4577.37C6951.73,4580.64,7262.41,4651.25,7396.74,4684.08C7396.74,4684.08,7395.33,4690.11,7393.92,4696.14L7393.92,4696.14L7371.26,4775.71L7324.92,4893.01L7258.18,5012.53C7251.11,5022.06,7244.05,5031.6,7236.98,5041.13C7122.74,4962.98,6987.47,4869.49,6873.23,4791.34L6873.23,4791.34C6863.05,4784.59,6852.87,4777.84,6842.69,4771.1Z"></path>
+<path data-component="svg__section" data-section-id="s_108" data-section-name="CLUB 131" class="block is-available map-section" d="M6008.7,4719.55C5948.29,4726.07,5879.15,4732.88,5804.1,4739.0C5804.1,4739.0,5866.56,5486.34,5866.56,5486.34C5875.17,5485.64,5883.7,5484.93,5892.14,5484.22C5892.14,5484.22,5902.01,5583.73,5902.01,5583.73C5974.1,5577.62,6041.33,5571.09,6100.81,5564.66L6100.81,5564.66C6100.81,5564.66,6054.76,5142.1,6008.7,4719.55Z"></path>
+<path data-component="svg__section" data-section-id="s_109" data-section-name="CLUB 132" class="block is-available map-section" d="M5803.58,4738.95C5720.9,4745.68,5629.35,4751.83,5530.25,4756.67C5530.25,4756.67,5569.18,5505.64,5569.18,5505.64C5632.06,5502.56,5829.61,5489.3,5866.58,5486.29L5866.58,5486.29C5866.58,5486.29,5834.81,5112.62,5803.58,4738.95Z"></path>
+<path data-component="svg__section" data-section-id="s_25" data-section-name="102" class="block is-available map-section" d="M2808.05,3347.9L2808.05,3679.8L3468.1,3679.8L3468.1,3347.9L2808.05,3347.9Z"></path>
+<path data-component="svg__section" data-section-id="s_24" data-section-name="101" class="block is-available map-section" d="M2808.05,3679.8L2808.05,3999.9L3468.1,3999.9L3468.1,3679.8L2808.05,3679.8Z"></path>
+<path data-component="svg__section" data-section-id="s_351" data-section-name="PIT C" class="block is-available map-section" d="M5913.3,4285.66L5913.3,4536.52C5790.7,4536.52,5668.1,4536.52,5545.51,4536.52C5545.51,4288.21,5545.51,4086.51,5545.51,3884.8L5545.51,3884.8L5571.47,3898.47L5598.53,3898.47L5675.3,3938.06L5739.28,3938.06L5913.3,4285.66Z"></path>
+<path data-component="svg__section" data-section-id="s_110" data-section-name="331" class="block is-available map-section" d="M7743.31,5502.15C7741.05,5504.68,7738.0,5507.99,7735.71,5510.51C7702.38,5547.17,7669.4,5580.79,7636.63,5611.68C7622.83,5624.69,7609.07,5637.21,7595.34,5649.27C7572.16,5669.63,7549.07,5688.67,7526.0,5706.52C7513.94,5715.84,7501.9,5724.84,7489.85,5733.53C7489.85,5733.53,7754.17,6097.73,7754.17,6097.73C7769.9,6086.37,7785.63,6074.61,7801.38,6062.43C7831.63,6039.03,7861.92,6014.07,7892.32,5987.37C7909.94,5971.89,7927.61,5955.82,7945.3,5939.14C7986.1,5900.69,8027.19,5858.87,8068.68,5813.23C8073.78,5807.62,8079.82,5800.93,8084.81,5795.3L8084.81,5795.3C8084.81,5795.3,7914.06,5648.72,7743.31,5502.15Z"></path>
+<path data-component="svg__section" data-section-id="s_352" data-section-name="C3 ADA" class="block is-available map-section" d="M4564.26,3689.8C4464.26,3689.8,4358.41,3689.8,4258.41,3689.8C4258.41,3789.8,4258.41,3889.8,4258.41,3989.8C4358.41,3989.8,4464.26,3989.8,4564.26,3989.8L4564.26,3989.8C4564.26,3889.8,4564.26,3789.8,4564.26,3689.8Z"></path>
+<path data-component="svg__section" data-section-id="s_59" data-section-name="205" class="block is-available map-section" d="M2746.43,2321.5C2744.02,2324.23,2740.98,2327.75,2738.56,2330.51C2715.38,2356.96,2693.8,2384.23,2672.05,2414.4C2672.05,2414.4,2649.58,2446.9,2649.58,2446.9C2636.5,2466.51,2624.14,2486.33,2612.41,2506.41C2596.11,2534.29,2581.11,2562.5,2567.35,2590.86C2567.35,2590.86,2853.27,2734.62,2853.27,2734.62C2863.94,2712.39,2875.91,2689.72,2888.71,2667.83C2897.24,2653.24,2906.24,2638.77,2915.79,2624.46C2915.79,2624.46,2933.29,2599.23,2933.29,2599.23C2947.56,2579.43,2962.89,2560.05,2979.36,2541.23C2982.82,2537.28,2987.03,2532.64,2990.48,2528.78L2990.48,2528.78C2990.48,2528.78,2868.46,2425.14,2746.43,2321.5Z"></path>
+<path data-component="svg__section" data-section-id="s_111" data-section-name="429" class="block map-section" d="M8448.06,5183.75C8445.32,5191.33,8442.93,5197.91,8440.04,5205.6C8419.27,5260.77,8394.61,5318.52,8365.35,5377.81C8346.22,5416.57,8324.89,5456.39,8301.65,5496.14C8301.65,5496.14,8524.62,5610.04,8524.62,5610.04C8548.22,5569.07,8569.8,5528.48,8589.56,5488.46C8622.66,5421.4,8650.56,5356.08,8674.03,5293.69C8677.45,5284.6,8680.77,5275.57,8684.01,5266.61L8684.01,5266.61C8684.01,5266.61,8566.03,5225.18,8448.06,5183.75Z"></path>
+<path data-component="svg__section" data-section-id="s_353" data-section-name="C3" class="block is-available map-section" d="M4564.26,3689.8L4690.41,3689.8L4690.41,3989.8L4564.26,3989.8L4564.26,3689.8Z"></path>
+<path data-component="svg__section" data-section-id="s_112" data-section-name="229" class="block is-available map-section" d="M7387.64,4945.35C7379.01,4963.28,7369.74,4981.16,7359.76,4998.91C7359.76,4998.91,7343.55,5026.55,7343.55,5026.55C7334.12,5042.0,7324.11,5057.29,7313.53,5072.37C7297.62,5094.99,7280.37,5117.1,7261.66,5138.48C7257.94,5142.73,7253.56,5147.73,7249.85,5151.88C7249.85,5151.88,7493.98,5359.08,7493.98,5359.08C7496.66,5356.06,7499.9,5352.19,7502.58,5349.13C7528.81,5319.11,7552.95,5288.18,7575.27,5256.48C7589.91,5235.65,7603.69,5214.6,7618.18,5190.87C7618.18,5190.87,7638.72,5155.72,7638.72,5155.72C7651.05,5133.77,7662.6,5111.66,7673.37,5089.51L7673.37,5089.51C7673.37,5089.51,7530.5,5017.43,7387.64,4945.35Z"></path>
+<path data-component="svg__section" data-section-id="s_113" data-section-name="CLUB 133" class="block is-available map-section" d="M5529.79,4756.7C5478.07,4759.22,5423.97,4761.36,5367.56,4763.05C5367.56,4763.05,5313.81,4837.84,5260.05,4912.62C5269.13,5213.98,5278.2,5515.35,5278.2,5515.35C5378.01,5513.57,5477.36,5510.04,5569.2,5505.62L5569.2,5505.62C5569.2,5505.62,5549.25,5131.17,5529.79,4756.7Z"></path>
+<path data-component="svg__section" data-section-id="s_114" data-section-name="230" class="block is-available map-section" d="M7249.89,5151.8C7227.53,5176.75,7205.25,5199.9,7183.03,5221.4C7172.02,5232.05,7161.03,5242.3,7150.05,5252.16C7131.48,5268.78,7112.95,5284.34,7094.41,5298.88C7085.53,5305.84,7075.83,5313.27,7066.95,5319.78C7066.95,5319.78,7256.63,5577.58,7256.63,5577.58C7268.14,5569.12,7280.39,5559.7,7291.89,5550.68C7315.82,5531.92,7339.73,5511.87,7363.73,5490.35C7377.64,5477.86,7391.56,5464.9,7405.49,5451.44C7434.85,5423.03,7464.31,5392.32,7493.91,5358.99L7493.91,5358.99C7493.91,5358.99,7371.9,5255.4,7249.89,5151.8Z"></path>
+<path data-component="svg__section" data-section-id="s_115" data-section-name="332" class="block is-available map-section" d="M7489.91,5733.5C7467.65,5749.52,7444.57,5765.13,7422.27,5779.13C7353.01,5822.63,7283.35,5856.87,7211.99,5884.85C7194.14,5891.85,7176.18,5898.46,7158.1,5904.73C7158.1,5904.73,7340.97,6317.22,7340.97,6317.22C7352.77,6312.87,7364.54,6308.4,7376.26,6303.8C7473.12,6265.82,7567.62,6219.25,7661.62,6160.21C7692.24,6140.97,7723.67,6119.88,7754.26,6097.81L7754.26,6097.81C7754.26,6097.81,7622.08,5915.65,7489.91,5733.5Z"></path>
+<path data-component="svg__section" data-section-id="s_116" data-section-name="430" class="block map-section" d="M8301.66,5496.1C8298.59,5501.34,8268.71,5550.6,8256.22,5569.88C8235.14,5602.38,8212.62,5634.94,8188.47,5667.52C8156.72,5710.34,8122.3,5752.94,8084.85,5795.2C8084.85,5795.2,8274.15,5958.59,8274.15,5958.59C8315.69,5911.57,8353.98,5864.09,8389.31,5816.44C8416.65,5779.54,8442.14,5742.7,8466.01,5705.89C8480.16,5684.05,8518.89,5619.96,8524.61,5610.06L8524.61,5610.06C8524.61,5610.06,8413.13,5553.08,8301.66,5496.1Z"></path>
+<path data-component="svg__section" data-section-id="s_117" data-section-name="CLUB 134" class="block is-available map-section" d="M4980.74,4912.55C4972.07,5213.92,4963.4,5515.29,4963.4,5515.29C5015.72,5516.23,5226.3,5516.22,5277.26,5515.33C5277.26,5515.33,5268.6,5213.95,5259.94,4912.58L5259.94,4912.58C5166.87,4912.57,5073.81,4912.56,4980.74,4912.55Z"></path>
+<path data-component="svg__section" data-section-id="s_118" data-section-name="431" class="block is-available map-section" d="M8084.86,5795.25C8079.78,5800.98,8073.9,5807.49,8068.7,5813.21C8027.21,5858.85,7986.12,5900.67,7945.32,5939.12C7927.63,5955.8,7909.96,5971.87,7892.34,5987.35C7861.94,6014.05,7831.65,6039.01,7801.4,6062.41C7785.5,6074.71,7770.13,6086.39,7754.25,6097.85C7754.25,6097.85,7900.78,6300.26,7900.78,6300.26C7918.63,6287.37,7936.49,6274.02,7954.36,6260.2C7988.64,6233.66,8022.94,6205.42,8057.33,6175.21C8077.13,6157.82,8096.96,6139.77,8116.82,6121.05C8162.08,6078.41,8207.67,6032.04,8253.68,5981.41C8260.36,5974.06,8267.59,5965.98,8274.11,5958.61L8274.11,5958.61C8274.11,5958.61,8179.48,5876.93,8084.86,5795.25Z"></path>
+<path data-component="svg__section" data-section-id="s_119" data-section-name="231" class="block is-available map-section" d="M7067.01,5319.7C7048.31,5333.4,7029.6,5346.13,7010.83,5358.01C6961.74,5389.03,6912.31,5414.16,6861.15,5435.5C6861.15,5435.5,6985.18,5730.48,6985.18,5730.48C7051.83,5702.73,7116.66,5669.67,7181.85,5628.48C7206.83,5612.69,7231.74,5595.74,7256.6,5577.51L7256.6,5577.51C7256.6,5577.51,7161.8,5448.6,7067.01,5319.7Z"></path>
+<path data-component="svg__section" data-section-id="s_50" data-section-name="CLUB 114" class="block is-available map-section" d="M5568.06,2173.85C5548.66,2548.38,5529.25,2922.91,5529.25,2922.91C5626.97,2927.69,5720.74,2933.99,5804.15,2940.76C5804.15,2940.76,5866.6,2193.36,5866.6,2193.36L5866.6,2193.36C5829.27,2190.32,5631.58,2176.96,5568.06,2173.85Z"></path>
+<path data-component="svg__section" data-section-id="s_56" data-section-name="116" class="block is-available map-section" d="M6099.7,2114.75C6053.7,2537.28,6007.7,2959.81,6007.7,2959.81C6053.45,2964.76,6095.82,2969.78,6132.23,2974.38C6132.23,2974.38,6237.07,2130.84,6237.07,2130.84L6237.07,2130.84C6196.68,2125.74,6150.07,2120.2,6099.7,2114.75Z"></path>
+<path data-component="svg__section" data-section-id="s_55" data-section-name="315" class="block is-available map-section" d="M6122.36,1151.7C6101.35,1375.52,6080.35,1599.35,6080.35,1599.35C6217.25,1610.2,6349.61,1622.81,6467.76,1636.7C6467.76,1636.7,6529.57,1191.22,6529.57,1191.22L6529.57,1191.22C6405.25,1176.57,6266.2,1163.2,6122.36,1151.7Z"></path>
+<path data-component="svg__section" data-section-id="s_58" data-section-name="316" class="block is-available map-section" d="M6529.65,1191.25C6498.7,1414.0,6467.75,1636.76,6467.75,1636.76C6575.27,1649.41,6672.87,1663.19,6752.74,1677.63C6783.99,1683.29,6814.63,1688.97,6844.74,1694.84C6844.74,1694.84,6925.9,1252.24,6925.9,1252.24C6895.39,1246.3,6864.38,1240.53,6832.81,1234.82L6832.81,1234.82C6747.95,1219.48,6644.18,1204.76,6529.65,1191.25Z"></path>
+<path data-component="svg__section" data-section-id="s_57" data-section-name="204" class="block is-available map-section" d="M2567.48,2590.85C2566.89,2592.07,2565.67,2594.2,2565.09,2595.42C2547.37,2632.24,2531.71,2668.32,2517.93,2705.05C2513.88,2715.82,2509.99,2726.64,2505.63,2739.15C2505.63,2739.15,2402.53,2701.85,2402.53,2701.85C2384.64,2753.56,2369.11,2807.14,2357.43,2855.71C2356.42,2859.9,2355.17,2865.1,2354.2,2869.25C2354.2,2869.25,2772.38,2970.0,2772.38,2970.0C2773.35,2965.78,2774.47,2960.53,2775.5,2956.27C2783.84,2921.6,2794.11,2885.39,2807.07,2847.55C2807.07,2847.55,2817.53,2818.43,2817.53,2818.43C2827.8,2791.08,2839.91,2762.68,2853.03,2735.23L2853.03,2735.23C2853.03,2735.23,2710.26,2663.04,2567.48,2590.85Z"></path>
+<path data-component="svg__section" data-section-id="s_52" data-section-name="CLUB 113" class="block is-available map-section" d="M5277.34,2164.2C5271.54,2365.35,5265.75,2566.5,5259.95,2767.66C5314.27,2842.12,5368.59,2916.58,5368.59,2916.58C5423.65,2918.21,5476.97,2920.32,5529.33,2922.86C5529.33,2922.86,5568.16,2173.91,5568.16,2173.91L5568.16,2173.91C5477.45,2169.49,5379.23,2166.02,5277.34,2164.2Z"></path>
+<path data-component="svg__section" data-section-id="s_51" data-section-name="314" class="block is-available map-section" d="M5725.95,1125.15C5711.95,1349.58,5697.95,1574.01,5697.95,1574.01C5825.87,1580.63,5955.92,1589.04,6080.39,1598.89C6080.39,1598.89,6122.35,1151.27,6122.35,1151.27L6122.35,1151.27C5993.24,1140.96,5858.54,1132.13,5725.95,1125.15Z"></path>
+<path data-component="svg__section" data-section-id="s_54" data-section-name="406" class="block is-available map-section" d="M2776.28,1090.8C2687.1,1142.68,2600.56,1197.44,2516.85,1254.92C2516.85,1254.92,2640.59,1482.89,2640.59,1482.89C2714.5,1440.71,2788.95,1405.66,2864.86,1375.9C2873.74,1372.42,2882.11,1369.27,2891.03,1365.93L2891.03,1365.93C2891.03,1365.93,2833.65,1228.36,2776.28,1090.8Z"></path>
+<path data-component="svg__section" data-section-id="s_53" data-section-name="203" class="block is-available map-section" d="M2354.29,2869.25C2335.18,2951.67,2324.16,3027.48,2317.02,3097.98C2317.02,3097.98,2313.33,3163.86,2309.65,3229.75C2309.71,3249.21,2309.77,3268.67,2309.83,3288.13C2524.83,3288.13,2739.83,3288.13,2739.83,3288.13C2739.75,3264.75,2739.67,3241.38,2739.67,3241.38C2742.73,3186.53,2745.8,3131.69,2745.8,3131.69C2750.41,3086.28,2758.43,3030.75,2772.33,2970.02L2772.33,2970.02C2772.33,2970.02,2563.31,2919.64,2354.29,2869.25Z"></path>
+<path data-component="svg__section" data-section-id="s_120" data-section-name="333" class="block is-available map-section" d="M7158.16,5904.7C7133.7,5913.15,7107.98,5921.32,7083.01,5928.65C7007.0,5950.93,6928.34,5968.49,6845.6,5984.64C6845.6,5984.64,6926.8,6427.25,6926.8,6427.25C7025.59,6408.0,7119.2,6386.98,7209.6,6360.48C7253.72,6347.55,7298.09,6333.04,7340.96,6317.25L7340.96,6317.25C7340.96,6317.25,7249.56,6110.98,7158.16,5904.7Z"></path>
+<path data-component="svg__section" data-section-id="s_49" data-section-name="202" class="block is-available map-section" d="M2309.75,3288.1L2309.83,3651.43L2739.73,3651.43L2739.76,3288.1L2309.75,3288.1Z"></path>
+<path data-component="svg__section" data-section-id="s_121" data-section-name="334" class="block is-available map-section" d="M6845.76,5984.65C6815.68,5990.51,6783.94,5996.38,6752.72,6002.03C6672.83,6016.47,6576.23,6030.19,6468.7,6042.85C6468.7,6042.85,6530.52,6488.34,6530.52,6488.34C6645.09,6474.82,6747.97,6460.19,6832.87,6444.84C6864.38,6439.14,6896.39,6433.24,6926.86,6427.31L6926.86,6427.31C6926.86,6427.31,6886.31,6205.98,6845.76,5984.65Z"></path>
+<path data-component="svg__section" data-section-id="s_48" data-section-name="313" class="block is-available map-section" d="M5323.01,1110.25C5317.33,1335.1,5311.65,1559.95,5311.65,1559.95C5434.71,1562.59,5566.22,1567.54,5697.96,1574.36C5697.96,1574.36,5725.92,1125.5,5725.92,1125.5L5725.92,1125.5C5588.55,1118.27,5451.46,1113.09,5323.01,1110.25Z"></path>
+<path data-component="svg__section" data-section-id="s_122" data-section-name="CLUB 135" class="block is-available map-section" d="M4710.34,4756.7C4691.97,5131.17,4673.6,5505.63,4673.6,5505.63C4763.61,5510.01,4861.2,5513.48,4962.48,5515.33C4962.48,5515.33,4971.64,5213.97,4980.81,4912.61C4926.21,4837.82,4871.62,4763.04,4871.62,4763.04L4871.62,4763.04C4816.34,4761.39,4762.85,4759.25,4710.34,4756.7Z"></path>
+<path data-component="svg__section" data-section-id="s_123" data-section-name="232" class="block is-available map-section" d="M6861.13,5435.4C6851.1,5439.47,6841.07,5443.54,6841.07,5443.54C6807.29,5456.84,6773.1,5468.36,6733.6,5480.06C6733.6,5480.06,6851.18,5893.75,6851.18,5893.75C6897.85,5879.92,6953.03,5861.58,6998.29,5843.78C7008.14,5839.8,7017.99,5835.83,7027.83,5831.85L7027.83,5831.85C6972.26,5699.7,6916.7,5567.55,6861.13,5435.4Z"></path>
+<path data-component="svg__section" data-section-id="s_124" data-section-name="432" class="block is-available map-section" d="M7754.21,6097.6C7723.76,6119.55,7692.07,6141.05,7661.6,6160.19C7567.6,6219.23,7473.1,6265.8,7376.24,6303.78C7364.33,6308.45,7352.94,6312.83,7340.95,6317.25C7340.95,6317.25,7461.91,6590.55,7461.91,6590.55C7592.36,6514.8,7717.18,6432.89,7835.76,6345.32C7857.17,6331.12,7879.41,6315.71,7900.81,6300.26L7900.81,6300.26C7900.81,6300.26,7827.51,6198.93,7754.21,6097.6Z"></path>
+<path data-component="svg__section" data-section-id="s_125" data-section-name="433" class="block is-available map-section" d="M7341.06,6317.15C7298.37,6332.85,7253.55,6347.58,7209.62,6360.46C7119.06,6387.01,7025.74,6408.03,6926.75,6427.3C6926.75,6427.3,6999.08,6822.97,6999.08,6822.97C7062.52,6795.72,7124.99,6767.12,7186.41,6737.23C7280.45,6691.47,7373.07,6642.16,7462.06,6590.51L7462.06,6590.51C7462.06,6590.51,7401.56,6453.83,7341.06,6317.15Z"></path>
+<path data-component="svg__section" data-section-id="s_126" data-section-name="242" class="block is-available map-section" d="M3390.97,5894.01C3449.71,5687.18,3508.44,5480.36,3508.44,5480.36C3506.8,5479.88,3505.16,5479.39,3503.52,5478.91C3468.52,5468.56,3434.05,5456.96,3399.99,5443.57C3394.01,5441.22,3388.04,5438.81,3382.08,5436.35C3382.08,5436.35,3216.4,5833.15,3216.4,5833.15C3225.14,5836.78,3233.9,5840.31,3242.68,5843.76C3288.35,5861.71,3334.54,5877.34,3381.54,5891.25L3381.54,5891.25C3384.68,5892.18,3387.82,5893.1,3390.97,5894.01Z"></path>
+<path data-component="svg__section" data-section-id="s_127" data-section-name="CLUB 136" class="block is-available map-section" d="M4436.2,4738.9C4405.62,5112.59,4375.05,5486.29,4375.05,5486.29C4412.98,5489.38,4610.38,5502.49,4673.68,5505.58C4673.68,5505.58,4710.28,4756.68,4710.28,4756.68L4710.28,4756.68C4612.42,4751.89,4519.69,4745.71,4436.2,4738.9Z"></path>
+<path data-component="svg__section" data-section-id="s_128" data-section-name="335" class="block is-available map-section" d="M6468.81,6042.8C6350.66,6056.69,6218.21,6069.43,6081.35,6080.28C6081.35,6080.28,6123.33,6527.92,6123.33,6527.92C6267.11,6516.42,6406.22,6503.0,6530.56,6488.35L6530.56,6488.35C6530.56,6488.35,6499.68,6265.58,6468.81,6042.8Z"></path>
+<path data-component="svg__section" data-section-id="s_129" data-section-name="243" class="block is-available map-section" d="M3172.93,5318.9C3078.14,5447.79,2983.35,5576.69,2983.35,5576.69C3008.61,5595.24,3033.91,5612.47,3059.31,5628.53C3124.55,5669.75,3191.19,5703.29,3258.83,5731.43C3258.83,5731.43,3382.13,5436.43,3382.13,5436.43C3331.45,5415.35,3279.72,5389.29,3230.23,5358.01L3230.23,5358.01C3211.09,5345.9,3191.99,5332.9,3172.93,5318.9Z"></path>
+<path data-component="svg__section" data-section-id="s_45" data-section-name="312" class="block is-available map-section" d="M4914.8,1110.33C4914.8,1110.33,4924.91,1560.23,4924.91,1560.23C4993.39,1558.73,5246.64,1558.53,5311.62,1559.93C5311.62,1559.93,5322.97,1110.13,5322.97,1110.13L5322.97,1110.13C5254.06,1108.62,4986.9,1108.71,4914.8,1110.33Z"></path>
+<path data-component="svg__section" data-section-id="s_44" data-section-name="CLUB 112" class="block is-available map-section" d="M4961.3,2164.26C4961.3,2164.26,4971.03,2465.86,4980.76,2767.46C4983.53,2767.46,5259.91,2767.46,5259.91,2767.46C5268.63,2465.73,5277.36,2164.01,5277.36,2164.01L5277.36,2164.01C5227.86,2163.14,5014.42,2163.32,4961.3,2164.26Z"></path>
+<path data-component="svg__section" data-section-id="s_47" data-section-name="CLUB 115" class="block is-available map-section" d="M5902.38,2095.95C5897.72,2145.73,5893.06,2195.51,5893.06,2195.51C5884.28,2194.77,5875.45,2194.04,5866.57,2193.31C5866.57,2193.31,5804.15,2940.74,5804.15,2940.74C5879.2,2946.86,5947.38,2953.46,6007.8,2959.99C6007.8,2959.99,6099.73,2114.94,6099.73,2114.94L6099.73,2114.94C6040.35,2108.53,5974.34,2102.05,5902.38,2095.95Z"></path>
+<path data-component="svg__section" data-section-id="s_46" data-section-name="201" class="block is-available map-section" d="M2412.5,3651.4L2412.5,3748.03L2458.43,3777.07L2458.41,3903.56L2412.5,3932.51L2412.5,4029.36L2739.65,4029.45L2739.73,3651.47L2412.5,3651.4Z"></path>
+<path data-component="svg__section" data-section-id="s_41" data-section-name="310" class="block is-available map-section" d="M4509.02,1125.9C4375.11,1132.98,4239.26,1142.08,4109.45,1152.51C4109.45,1152.51,4147.56,1600.41,4147.56,1600.41C4273.14,1590.36,4404.68,1581.66,4534.46,1574.88L4534.46,1574.88C4534.46,1574.88,4521.74,1350.39,4509.02,1125.9Z"></path>
+<path data-component="svg__section" data-section-id="s_40" data-section-name="309" class="block is-available map-section" d="M4109.57,1152.45C3964.33,1164.13,3824.25,1177.8,3699.55,1192.66C3699.55,1192.66,3755.7,1638.86,3755.7,1638.86C3874.55,1624.62,4008.47,1611.53,4147.54,1600.39L4147.54,1600.39C4147.54,1600.39,4128.56,1376.42,4109.57,1152.45Z"></path>
+<path data-component="svg__section" data-section-id="s_43" data-section-name="311" class="block is-available map-section" d="M4914.42,1110.35C4784.76,1113.28,4646.82,1118.68,4509.0,1125.96C4509.0,1125.96,4534.5,1574.86,4534.5,1574.86C4667.24,1567.94,4800.09,1562.91,4924.89,1560.16L4924.89,1560.16C4924.89,1560.16,4919.66,1335.26,4914.42,1110.35Z"></path>
+<path data-component="svg__section" data-section-id="s_42" data-section-name="CLUB 111" class="block is-available map-section" d="M4961.36,2164.35C4860.34,2166.19,4763.11,2169.68,4671.5,2174.21C4671.5,2174.21,4709.38,2923.23,4709.38,2923.23C4761.34,2920.7,4817.27,2918.37,4873.59,2916.69C4873.59,2916.69,4927.25,2842.17,4980.91,2767.66L4980.91,2767.66C4974.39,2566.55,4967.88,2365.45,4961.36,2164.35Z"></path>
+    </g>
+    <g class="labels">
+<text data-component="svg__label" data-label-id="s_130" class="label" transform="" font-size="136"><tspan dy="1em" x="6758" y="6587">434</tspan></text>
+<text data-component="svg__label" data-label-id="s_131" class="label" transform="" font-size="136"><tspan dy="1em" x="5905" y="6250">336</tspan></text>
+<text data-component="svg__label" data-label-id="s_132" class="label" transform="" font-size="116"><tspan dy="1em" x="4287" y="5021">C 137</tspan></text>
+<text data-component="svg__label" data-label-id="s_133" class="label" transform="" font-size="136"><tspan dy="1em" x="2966" y="5262">244</tspan></text>
+<text data-component="svg__label" data-label-id="s_134" class="label" transform="" font-size="136"><tspan dy="1em" x="5513" y="6270">337</tspan></text>
+<text data-component="svg__label" data-label-id="s_135" class="label" transform="rotate(-83,4024,5133)" font-size="136"><tspan dy="1em" x="4024" y="5133">138</tspan></text>
+<text data-component="svg__label" data-label-id="s_136" class="label" transform="" font-size="136"><tspan dy="1em" x="6347" y="6644">435</tspan></text>
+<text data-component="svg__label" data-label-id="s_137" class="label" transform="" font-size="136"><tspan dy="1em" x="5938" y="6682">436</tspan></text>
+<text data-component="svg__label" data-label-id="s_138" class="label" transform="" font-size="136"><tspan dy="1em" x="3899" y="5039">139</tspan></text>
+<text data-component="svg__label" data-label-id="s_139" class="label" transform="" font-size="136"><tspan dy="1em" x="5116" y="6279">338</tspan></text>
+<text data-component="svg__label" data-label-id="s_70" class="label" transform="" font-size="136"><tspan dy="1em" x="4289" y="774">410</tspan></text>
+<text data-component="svg__label" data-label-id="s_72" class="label" transform="" font-size="136"><tspan dy="1em" x="8014" y="2065">320</tspan></text>
+<text data-component="svg__label" data-label-id="s_71" class="label" transform="" font-size="136"><tspan dy="1em" x="7774" y="1801">319</tspan></text>
+<text data-component="svg__label" data-label-id="s_78" class="label" transform="" font-size="136"><tspan dy="1em" x="7273" y="2234">220</tspan></text>
+<text data-component="svg__label" data-label-id="s_77" class="label" transform="" font-size="136"><tspan dy="1em" x="5117" y="721">412</tspan></text>
+<text data-component="svg__label" data-label-id="s_79" class="label" transform="" font-size="136"><tspan dy="1em" x="8293" y="2646">322</tspan></text>
+<text data-component="svg__label" data-label-id="s_74" class="label" transform="rotate(-71,6781,1976)" font-size="136"><tspan dy="1em" x="6781" y="1976">218</tspan></text>
+<text data-component="svg__label" data-label-id="s_73" class="label" transform="" font-size="136"><tspan dy="1em" x="4699" y="736">411</tspan></text>
+<text data-component="svg__label" data-label-id="s_76" class="label" transform="" font-size="136"><tspan dy="1em" x="8175" y="2337">321</tspan></text>
+<text data-component="svg__label" data-label-id="s_75" class="label" transform="" font-size="136"><tspan dy="1em" x="7052" y="2081">219</tspan></text>
+<text data-component="svg__label" data-label-id="s_140" class="label" transform="" font-size="136"><tspan dy="1em" x="2779" y="5045">245</tspan></text>
+<text data-component="svg__label" data-label-id="s_141" class="label" transform="" font-size="136"><tspan dy="1em" x="5532" y="6704">437</tspan></text>
+<text data-component="svg__label" data-label-id="s_142" class="label" transform="" font-size="136"><tspan dy="1em" x="4719" y="6270">339</tspan></text>
+<text data-component="svg__label" data-label-id="s_143" class="label" transform="" font-size="136"><tspan dy="1em" x="3623" y="4987">140</tspan></text>
+<text data-component="svg__label" data-label-id="s_144" class="label" transform="" font-size="136"><tspan dy="1em" x="2648" y="4780">246</tspan></text>
+<text data-component="svg__label" data-label-id="s_145" class="label" transform="" font-size="136"><tspan dy="1em" x="4323" y="6249">340</tspan></text>
+<text data-component="svg__label" data-label-id="s_146" class="label" transform="" font-size="136"><tspan dy="1em" x="2525" y="4480">247</tspan></text>
+<text data-component="svg__label" data-label-id="s_300" class="label" transform="" font-size="90"><tspan dy="1em" x="5333" y="4180">A2</tspan></text>
+<text data-component="svg__label" data-label-id="s_147" class="label" transform="" font-size="136"><tspan dy="1em" x="5117" y="6627">438</tspan></text>
+<text data-component="svg__label" data-label-id="s_148" class="label" transform="" font-size="136"><tspan dy="1em" x="3388" y="4833">141</tspan></text>
+<text data-component="svg__label" data-label-id="s_149" class="label" transform="" font-size="136"><tspan dy="1em" x="3206" y="4629">142</tspan></text>
+<text data-component="svg__label" data-label-id="s_309" class="label" transform="" font-size="90"><tspan dy="1em" x="4928" y="4180">B2</tspan></text>
+<text data-component="svg__label" data-label-id="s_61" class="label" transform="" font-size="136"><tspan dy="1em" x="3055" y="1059">407</tspan></text>
+<text data-component="svg__label" data-label-id="s_60" class="label" transform="" font-size="136"><tspan dy="1em" x="6329" y="2504">117</tspan></text>
+<text data-component="svg__label" data-label-id="s_67" class="label" transform="" font-size="136"><tspan dy="1em" x="3880" y="837">409</tspan></text>
+<text data-component="svg__label" data-label-id="s_66" class="label" transform="" font-size="136"><tspan dy="1em" x="7442" y="1581">318</tspan></text>
+<text data-component="svg__label" data-label-id="s_69" class="label" transform="rotate(71,3460,1974)" font-size="136"><tspan dy="1em" x="3460" y="1974">208</tspan></text>
+<text data-component="svg__label" data-label-id="s_68" class="label" transform="" font-size="136"><tspan dy="1em" x="3194" y="2077">207</tspan></text>
+<text data-component="svg__label" data-label-id="s_63" class="label" transform="" font-size="136"><tspan dy="1em" x="6587" y="2570">118</tspan></text>
+<text data-component="svg__label" data-label-id="s_62" class="label" transform="" font-size="136"><tspan dy="1em" x="3471" y="928">408</tspan></text>
+<text data-component="svg__label" data-label-id="s_65" class="label" transform="" font-size="136"><tspan dy="1em" x="7069" y="1437">317</tspan></text>
+<text data-component="svg__label" data-label-id="s_64" class="label" transform="" font-size="136"><tspan dy="1em" x="2971" y="2241">206</tspan></text>
+<text data-component="svg__label" data-label-id="s_150" class="label" transform="" font-size="136"><tspan dy="1em" x="3926" y="6217">341</tspan></text>
+<text data-component="svg__label" data-label-id="s_151" class="label" transform="" font-size="136"><tspan dy="1em" x="2522" y="4112">248</tspan></text>
+<text data-component="svg__label" data-label-id="s_152" class="label" transform="" font-size="136"><tspan dy="1em" x="4701" y="6703">439</tspan></text>
+<text data-component="svg__label" data-label-id="s_153" class="label" transform="" font-size="136"><tspan dy="1em" x="3139" y="4356">143</tspan></text>
+<text data-component="svg__label" data-label-id="s_154" class="label" transform="" font-size="136"><tspan dy="1em" x="4293" y="6681">440</tspan></text>
+<text data-component="svg__label" data-label-id="s_155" class="label" transform="" font-size="136"><tspan dy="1em" x="3530" y="6168">342</tspan></text>
+<text data-component="svg__label" data-label-id="s_156" class="label" transform="" font-size="136"><tspan dy="1em" x="3151" y="6100">343</tspan></text>
+<text data-component="svg__label" data-label-id="s_157" class="label" transform="" font-size="136"><tspan dy="1em" x="3136" y="4067">144</tspan></text>
+<text data-component="svg__label" data-label-id="s_158" class="label" transform="" font-size="136"><tspan dy="1em" x="3881" y="6646">441</tspan></text>
+<text data-component="svg__label" data-label-id="s_159" class="label" transform="" font-size="136"><tspan dy="1em" x="3468" y="6584">442</tspan></text>
+<text data-component="svg__label" data-label-id="s_92" class="label" transform="" font-size="136"><tspan dy="1em" x="7714" y="3380">224</tspan></text>
+<text data-component="svg__label" data-label-id="s_91" class="label" transform="" font-size="136"><tspan dy="1em" x="8322" y="4148">326</tspan></text>
+<text data-component="svg__label" data-label-id="s_94" class="label" transform="" font-size="136"><tspan dy="1em" x="7605" y="1262">418</tspan></text>
+<text data-component="svg__label" data-label-id="s_93" class="label" transform="" font-size="136"><tspan dy="1em" x="8327" y="4506">327</tspan></text>
+<text data-component="svg__label" data-label-id="s_90" class="label" transform="" font-size="136"><tspan dy="1em" x="7149" y="1056">417</tspan></text>
+<text data-component="svg__label" data-label-id="s_99" class="label" transform="" font-size="136"><tspan dy="1em" x="8303" y="4846">328</tspan></text>
+<text data-component="svg__label" data-label-id="s_96" class="label" transform="" font-size="136"><tspan dy="1em" x="7714" y="3753">225</tspan></text>
+<text data-component="svg__label" data-label-id="s_95" class="label" transform="" font-size="136"><tspan dy="1em" x="6608" y="4987">128</tspan></text>
+<text data-component="svg__label" data-label-id="s_98" class="label" transform="" font-size="136"><tspan dy="1em" x="8016" y="1548">419</tspan></text>
+<text data-component="svg__label" data-label-id="s_97" class="label" transform="" font-size="136"><tspan dy="1em" x="6325" y="5045">129</tspan></text>
+<text data-component="svg__label" data-label-id="s_160" class="label" transform="" font-size="136"><tspan dy="1em" x="2787" y="5958">344</tspan></text>
+<text data-component="svg__label" data-label-id="s_161" class="label" transform="" font-size="136"><tspan dy="1em" x="3055" y="6470">443</tspan></text>
+<text data-component="svg__label" data-label-id="s_162" class="label" transform="" font-size="136"><tspan dy="1em" x="2459" y="5725">345</tspan></text>
+<text data-component="svg__label" data-label-id="s_163" class="label" transform="" font-size="136"><tspan dy="1em" x="2220" y="5445">346</tspan></text>
+<text data-component="svg__label" data-label-id="s_164" class="label" transform="" font-size="136"><tspan dy="1em" x="2702" y="6291">444</tspan></text>
+<text data-component="svg__label" data-label-id="s_165" class="label" transform="" font-size="136"><tspan dy="1em" x="2059" y="5186">347</tspan></text>
+<text data-component="svg__label" data-label-id="s_201" class="label" transform="" font-size="138"><tspan dy="1em" x="7128" y="3415">122</tspan></text>
+<text data-component="svg__label" data-label-id="s_322" class="label" transform="" font-size="90"><tspan dy="1em" x="5333" y="3374">A4</tspan></text>
+<text data-component="svg__label" data-label-id="s_169" class="label" transform="" font-size="90"><tspan dy="1em" x="4939" y="4488">B1</tspan></text>
+<text data-component="svg__label" data-label-id="s_202" class="label" transform="" font-size="138"><tspan dy="1em" x="7128" y="3743">123</tspan></text>
+<text data-component="svg__label" data-label-id="s_323" class="label" transform="" font-size="90"><tspan dy="1em" x="4928" y="3777">B3</tspan></text>
+<text data-component="svg__label" data-label-id="s_324" class="label" transform="" font-size="90"><tspan dy="1em" x="5333" y="3063">A5</tspan></text>
+<text data-component="svg__label" data-label-id="s_325" class="label" transform="" font-size="90"><tspan dy="1em" x="4928" y="3374">B4</tspan></text>
+<text data-component="svg__label" data-label-id="s_326" class="label" transform="" font-size="90"><tspan dy="1em" x="4939" y="3063">B5</tspan></text>
+<text data-component="svg__label" data-label-id="s_81" class="label" transform="" font-size="136"><tspan dy="1em" x="5942" y="773">414</tspan></text>
+<text data-component="svg__label" data-label-id="s_80" class="label" transform="" font-size="136"><tspan dy="1em" x="5535" y="735">413</tspan></text>
+<text data-component="svg__label" data-label-id="s_83" class="label" transform="" font-size="136"><tspan dy="1em" x="8327" y="2983">323</tspan></text>
+<text data-component="svg__label" data-label-id="s_82" class="label" transform="" font-size="136"><tspan dy="1em" x="7461" y="2452">221</tspan></text>
+<text data-component="svg__label" data-label-id="s_89" class="label" transform="" font-size="136"><tspan dy="1em" x="8246" y="3752">325</tspan></text>
+<text data-component="svg__label" data-label-id="s_88" class="label" transform="" font-size="136"><tspan dy="1em" x="6755" y="926">416</tspan></text>
+<text data-component="svg__label" data-label-id="s_85" class="label" transform="" font-size="136"><tspan dy="1em" x="7595" y="2706">222</tspan></text>
+<text data-component="svg__label" data-label-id="s_84" class="label" transform="" font-size="136"><tspan dy="1em" x="8322" y="3355">324</tspan></text>
+<text data-component="svg__label" data-label-id="s_87" class="label" transform="" font-size="136"><tspan dy="1em" x="7705" y="3015">223</tspan></text>
+<text data-component="svg__label" data-label-id="s_86" class="label" transform="" font-size="136"><tspan dy="1em" x="6350" y="835">415</tspan></text>
+<text data-component="svg__label" data-label-id="s_38" class="label" transform="" font-size="116"><tspan dy="1em" x="4294" y="2431">C 109</tspan></text>
+<text data-component="svg__label" data-label-id="s_37" class="label" transform="" font-size="136"><tspan dy="1em" x="3529" y="1373">308</tspan></text>
+<text data-component="svg__label" data-label-id="s_299" class="label" transform="" font-size="90"><tspan dy="1em" x="5333" y="4488">A1</tspan></text>
+<text data-component="svg__label" data-label-id="s_39" class="label" transform="" font-size="136"><tspan dy="1em" x="4547" y="2404">C 110</tspan></text>
+<text data-component="svg__label" data-label-id="s_214" class="label" transform="" font-size="138"><tspan dy="1em" x="6854" y="2663">119</tspan></text>
+<text data-component="svg__label" data-label-id="s_215" class="label" transform="" font-size="138"><tspan dy="1em" x="7112" y="2819">120</tspan></text>
+<text data-component="svg__label" data-label-id="s_216" class="label" transform="" font-size="138"><tspan dy="1em" x="7201" y="3090">121</tspan></text>
+<text data-component="svg__label" data-label-id="s_219" class="label" transform="" font-size="138"><tspan dy="1em" x="6901" y="4897">127</tspan></text>
+<text data-component="svg__label" data-label-id="s_34" class="label" transform="" font-size="136"><tspan dy="1em" x="2787" y="1583">306</tspan></text>
+<text data-component="svg__label" data-label-id="s_33" class="label" transform="" font-size="136"><tspan dy="1em" x="3906" y="2517">107</tspan></text>
+<text data-component="svg__label" data-label-id="s_36" class="label" transform="" font-size="136"><tspan dy="1em" x="3151" y="1441">307</tspan></text>
+<text data-component="svg__label" data-label-id="s_35" class="label" transform="rotate(83,4212,2525)" font-size="136"><tspan dy="1em" x="4212" y="2525">108</tspan></text>
+<text data-component="svg__label" data-label-id="s_30" class="label" transform="" font-size="136"><tspan dy="1em" x="2216" y="2079">304</tspan></text>
+<text data-component="svg__label" data-label-id="s_32" class="label" transform="" font-size="136"><tspan dy="1em" x="3650" y="2573">106</tspan></text>
+<text data-component="svg__label" data-label-id="s_31" class="label" transform="" font-size="136"><tspan dy="1em" x="2458" y="1816">305</tspan></text>
+<text data-component="svg__label" data-label-id="s_27" class="label" transform="" font-size="136"><tspan dy="1em" x="3187" y="2859">104</tspan></text>
+<text data-component="svg__label" data-label-id="s_26" class="label" transform="" font-size="136"><tspan dy="1em" x="3139" y="3116">103</tspan></text>
+<text data-component="svg__label" data-label-id="s_100" class="label" transform="" font-size="136"><tspan dy="1em" x="7714" y="4123">226</tspan></text>
+<text data-component="svg__label" data-label-id="s_29" class="label" transform="" font-size="136"><tspan dy="1em" x="3408" y="2687">105</tspan></text>
+<text data-component="svg__label" data-label-id="s_101" class="label" transform="" font-size="136"><tspan dy="1em" x="8295" y="1864">420</tspan></text>
+<text data-component="svg__label" data-label-id="s_343" class="label" transform="" font-size="90"><tspan dy="1em" x="5711" y="3420">PIT D</tspan></text>
+<text data-component="svg__label" data-label-id="s_28" class="label" transform="" font-size="136"><tspan dy="1em" x="2076" y="2332">303</tspan></text>
+<text data-component="svg__label" data-label-id="s_102" class="label" transform="" font-size="136"><tspan dy="1em" x="7712" y="4483">227</tspan></text>
+<text data-component="svg__label" data-label-id="s_103" class="label" transform="rotate(85,6205,5131)" font-size="136"><tspan dy="1em" x="6205" y="5131">130</tspan></text>
+<text data-component="svg__label" data-label-id="s_104" class="label" transform="" font-size="136"><tspan dy="1em" x="8185" y="5176">329</tspan></text>
+<text data-component="svg__label" data-label-id="s_346" class="label" transform="" font-size="90"><tspan dy="1em" x="6123" y="4190">PIT A</tspan></text>
+<text data-component="svg__label" data-label-id="s_105" class="label" transform="" font-size="136"><tspan dy="1em" x="8492" y="2185">421</tspan></text>
+<text data-component="svg__label" data-label-id="s_226" class="label" transform="" font-size="138"><tspan dy="1em" x="7128" y="4075">124</tspan></text>
+<text data-component="svg__label" data-label-id="s_347" class="label" transform="" font-size="90"><tspan dy="1em" x="6123" y="3395">PIT B</tspan></text>
+<text data-component="svg__label" data-label-id="s_106" class="label" transform="" font-size="136"><tspan dy="1em" x="8019" y="5462">330</tspan></text>
+<text data-component="svg__label" data-label-id="s_227" class="label" transform="" font-size="138"><tspan dy="1em" x="7181" y="4392">125</tspan></text>
+<text data-component="svg__label" data-label-id="s_348" class="label" transform="" font-size="90"><tspan dy="1em" x="5333" y="3777">A3</tspan></text>
+<text data-component="svg__label" data-label-id="s_107" class="label" transform="" font-size="136"><tspan dy="1em" x="7592" y="4789">228</tspan></text>
+<text data-component="svg__label" data-label-id="s_228" class="label" transform="" font-size="138"><tspan dy="1em" x="7129" y="4686">126</tspan></text>
+<text data-component="svg__label" data-label-id="s_108" class="label" transform="" font-size="116"><tspan dy="1em" x="5948" y="5021">C 131</tspan></text>
+<text data-component="svg__label" data-label-id="s_109" class="label" transform="" font-size="136"><tspan dy="1em" x="5690" y="4980">C 132</tspan></text>
+<text data-component="svg__label" data-label-id="s_25" class="label" transform="" font-size="136"><tspan dy="1em" x="3136" y="3415">102</tspan></text>
+<text data-component="svg__label" data-label-id="s_24" class="label" transform="" font-size="136"><tspan dy="1em" x="3136" y="3741">101</tspan></text>
+<text data-component="svg__label" data-label-id="s_351" class="label" transform="" font-size="90"><tspan dy="1em" x="5711" y="4160">PIT C</tspan></text>
+<text data-component="svg__label" data-label-id="s_110" class="label" transform="" font-size="136"><tspan dy="1em" x="7777" y="5726">331</tspan></text>
+<text data-component="svg__label" data-label-id="s_352" class="label" transform="" font-size="90"><tspan dy="1em" x="4411" y="3790">C3 ADA</tspan></text>
+<text data-component="svg__label" data-label-id="s_59" class="label" transform="" font-size="136"><tspan dy="1em" x="2783" y="2451">205</tspan></text>
+<text data-component="svg__label" data-label-id="s_111" class="label" transform="" font-size="136"><tspan dy="1em" x="8478" y="5299">429</tspan></text>
+<text data-component="svg__label" data-label-id="s_353" class="label" transform="" font-size="90"><tspan dy="1em" x="4627" y="3810">C3</tspan></text>
+<text data-component="svg__label" data-label-id="s_112" class="label" transform="" font-size="136"><tspan dy="1em" x="7458" y="5054">229</tspan></text>
+<text data-component="svg__label" data-label-id="s_113" class="label" transform="" font-size="136"><tspan dy="1em" x="5408" y="5006">C 133</tspan></text>
+<text data-component="svg__label" data-label-id="s_114" class="label" transform="" font-size="136"><tspan dy="1em" x="7280" y="5268">230</tspan></text>
+<text data-component="svg__label" data-label-id="s_115" class="label" transform="" font-size="136"><tspan dy="1em" x="7442" y="5960">332</tspan></text>
+<text data-component="svg__label" data-label-id="s_116" class="label" transform="" font-size="136"><tspan dy="1em" x="8291" y="5627">430</tspan></text>
+<text data-component="svg__label" data-label-id="s_117" class="label" transform="" font-size="136"><tspan dy="1em" x="5118" y="5073">C 134</tspan></text>
+<text data-component="svg__label" data-label-id="s_118" class="label" transform="" font-size="136"><tspan dy="1em" x="7994" y="5962">431</tspan></text>
+<text data-component="svg__label" data-label-id="s_119" class="label" transform="" font-size="136"><tspan dy="1em" x="7047" y="5437">231</tspan></text>
+<text data-component="svg__label" data-label-id="s_50" class="label" transform="" font-size="136"><tspan dy="1em" x="5686" y="2404">C 114</tspan></text>
+<text data-component="svg__label" data-label-id="s_56" class="label" transform="rotate(-83,6027,2528)" font-size="136"><tspan dy="1em" x="6027" y="2528">116</tspan></text>
+<text data-component="svg__label" data-label-id="s_55" class="label" transform="" font-size="136"><tspan dy="1em" x="6298" y="1322">315</tspan></text>
+<text data-component="svg__label" data-label-id="s_58" class="label" transform="" font-size="136"><tspan dy="1em" x="6691" y="1370">316</tspan></text>
+<text data-component="svg__label" data-label-id="s_57" class="label" transform="" font-size="136"><tspan dy="1em" x="2645" y="2701">204</tspan></text>
+<text data-component="svg__label" data-label-id="s_52" class="label" transform="" font-size="136"><tspan dy="1em" x="5403" y="2378">C 113</tspan></text>
+<text data-component="svg__label" data-label-id="s_51" class="label" transform="" font-size="136"><tspan dy="1em" x="5905" y="1291">314</tspan></text>
+<text data-component="svg__label" data-label-id="s_54" class="label" transform="" font-size="136"><tspan dy="1em" x="2706" y="1201">406</tspan></text>
+<text data-component="svg__label" data-label-id="s_53" class="label" transform="" font-size="136"><tspan dy="1em" x="2539" y="3014">203</tspan></text>
+<text data-component="svg__label" data-label-id="s_120" class="label" transform="" font-size="136"><tspan dy="1em" x="7069" y="6104">333</tspan></text>
+<text data-component="svg__label" data-label-id="s_49" class="label" transform="" font-size="136"><tspan dy="1em" x="2522" y="3371">202</tspan></text>
+<text data-component="svg__label" data-label-id="s_121" class="label" transform="" font-size="136"><tspan dy="1em" x="6691" y="6171">334</tspan></text>
+<text data-component="svg__label" data-label-id="s_48" class="label" transform="" font-size="136"><tspan dy="1em" x="5513" y="1270">313</tspan></text>
+<text data-component="svg__label" data-label-id="s_122" class="label" transform="" font-size="136"><tspan dy="1em" x="4826" y="5005">C 135</tspan></text>
+<text data-component="svg__label" data-label-id="s_123" class="label" transform="rotate(71,6959,5646)" font-size="136"><tspan dy="1em" x="6959" y="5646">232</tspan></text>
+<text data-component="svg__label" data-label-id="s_124" class="label" transform="" font-size="136"><tspan dy="1em" x="7605" y="6253">432</tspan></text>
+<text data-component="svg__label" data-label-id="s_125" class="label" transform="" font-size="136"><tspan dy="1em" x="7169" y="6478">433</tspan></text>
+<text data-component="svg__label" data-label-id="s_126" class="label" transform="rotate(-71,3276,5640)" font-size="136"><tspan dy="1em" x="3276" y="5640">242</tspan></text>
+<text data-component="svg__label" data-label-id="s_127" class="label" transform="" font-size="136"><tspan dy="1em" x="4539" y="4980">C 136</tspan></text>
+<text data-component="svg__label" data-label-id="s_128" class="label" transform="" font-size="136"><tspan dy="1em" x="6298" y="6218">335</tspan></text>
+<text data-component="svg__label" data-label-id="s_129" class="label" transform="" font-size="136"><tspan dy="1em" x="3196" y="5441">243</tspan></text>
+<text data-component="svg__label" data-label-id="s_45" class="label" transform="" font-size="136"><tspan dy="1em" x="5116" y="1262">312</tspan></text>
+<text data-component="svg__label" data-label-id="s_44" class="label" transform="" font-size="136"><tspan dy="1em" x="5117" y="2312">C 112</tspan></text>
+<text data-component="svg__label" data-label-id="s_47" class="label" transform="" font-size="116"><tspan dy="1em" x="5934" y="2431">C 115</tspan></text>
+<text data-component="svg__label" data-label-id="s_46" class="label" transform="" font-size="136"><tspan dy="1em" x="2602" y="3742">201</tspan></text>
+<text data-component="svg__label" data-label-id="s_41" class="label" transform="" font-size="136"><tspan dy="1em" x="4323" y="1292">310</tspan></text>
+<text data-component="svg__label" data-label-id="s_40" class="label" transform="" font-size="136"><tspan dy="1em" x="3926" y="1324">309</tspan></text>
+<text data-component="svg__label" data-label-id="s_43" class="label" transform="" font-size="136"><tspan dy="1em" x="4719" y="1271">311</tspan></text>
+<text data-component="svg__label" data-label-id="s_42" class="label" transform="" font-size="136"><tspan dy="1em" x="4831" y="2379">C 111</tspan></text>
+    </g>
+  </svg>
+
+  <!-- Map toggle -->
+  <div class="map-toggle">🗺</div>
+
+<!-- SEAT TOOLTIP -->
+<div id="seatTooltip"></div>
+
+<!-- MAP TOOLTIP (Mobile Section) -->
+<div id="mapTooltip" class="map-tooltip"></div>
+
+<!-- INFO BANNER -->
+
+<!-- BOTTOM SHEET: default state -->
+<div class="bottom-sheet" id="bottomSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-content" id="sheetDefault">
+    <h2>Pick Your Tickets on Map</h2>
+    <p>Great tickets available!</p>
+  </div>
+
+  <!-- Ticket list (shown on section click) -->
+  <div class="ticket-list" id="ticketList">
+    <div class="sheet-title-row">
+      <button class="back-btn" id="backBtn">←</button>
+      <span class="sheet-section-name" id="sectionName">Section</span>
+    </div>
+    <div id="ticketItems" style="padding: 12px 16px 0;"></div>
+    
+    <!-- Purchase summary (shown when seats are selected) -->
+    <div id="purchaseSummary" class="purchase-summary" style="display: none; margin: 16px 0 12px;">
+      <div class="purchase-summary-row">
+        <span>Seats:</span>
+        <span id="selectedSeats">-</span>
+      </div>
+      <div class="purchase-summary-row">
+        <span>Quantity:</span>
+        <span id="seatCount">0</span>
+      </div>
+      <div class="purchase-summary-row total">
+        <span>Total:</span>
+        <span id="totalPrice">$0</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Purchase button (shown when seats selected) -->
+  <button class="purchase-btn" id="purchaseBtn" style="display: none;" disabled>
+    Continue to Checkout
+  </button>
+</div>
+
+<div class="home-indicator"></div>
+
+<script>
+  // ── STATE ──────────────────────────────────────────────────
+  var checkoutArray = [];
+  var quantityMultiplier = 1;
+
+  // ── HELPERS ────────────────────────────────────────────────
+  function getPrice(name) {
+    if (!name) return 150;
+    if (name.startsWith('PIT'))  return 680;
+    if (/^[ABC]/.test(name))     return 1200;
+    if (name.startsWith('CLUB')) return 350;
+    const n = parseInt(name);
+    if (n >= 400) return 81;
+    if (n >= 300) return 130;
+    if (n >= 200) return 210;
+    if (n >= 100) return 380;
+    return 150;
+  }
+
+  // ── CHECKOUT BAR & CART MATH ────────────────────────────────
+  function updateCheckoutUI() {
+    const count = checkoutArray.length;
+    const baseTotal = checkoutArray.reduce((s, t) => s + t.price, 0);
+    const grandTotal = baseTotal * quantityMultiplier;
+
+    const bar = document.getElementById('checkout-bar');
+    const counter = document.getElementById('checkout-counter');
+    const totalEl = document.getElementById('checkout-total');
+    const ps = document.getElementById('purchaseSummary');
+    const pb = document.getElementById('purchaseBtn');
+
+    if (count === 0) { 
+      if(bar) bar.classList.add('hidden'); 
+      if(ps) ps.style.display = 'none';
+      if(pb) pb.style.display = 'none';
+      return; 
+    }
+    
+    // Update Bottom Fixed Bar
+    if(bar) bar.classList.remove('hidden');
+    if(counter) counter.textContent = count;
+    if(totalEl) totalEl.textContent = `$${grandTotal.toFixed(2)}`;
+
+    // Update Bottom Sheet Summary
+    if (ps) {
+      ps.style.display = 'block';
+      const seats = checkoutArray.map(t => `Sec ${t.section} Row ${t.row}`);
+      document.getElementById('selectedSeats').textContent = seats.join(', ');
+      document.getElementById('seatCount').textContent = count;
+      document.getElementById('totalPrice').textContent = `$${grandTotal.toLocaleString()}`;
+    }
+    if (pb) {
+      pb.style.display = 'block';
+      pb.disabled = false;
+    }
+  }
+
+  // ── ROUTING ─────────────────────────────────────────────────
+  function routeToCheckout() {
+    if (checkoutArray.length === 0) {
+      alert('Please select seats first');
+      return;
+    }
+    localStorage.setItem('concertCart', JSON.stringify(checkoutArray));
+    localStorage.setItem('concertQuantity', quantityMultiplier.toString());
+    window.location.href = 'checkout.html';
+  }
+
+  // ── EVENT DELEGATION: TICKET CLICKING ───────────────────────
+  document.addEventListener('click', function(e) {
+    const ticketItem = e.target.closest('.ticket-item, .desktop-ticket-item');
+    if (!ticketItem) return;
+
+    e.preventDefault();
+    const id = ticketItem.dataset.ticketId;
+    const idx = checkoutArray.findIndex(t => t.id === id);
+
+    if (idx >= 0) {
+      checkoutArray.splice(idx, 1);
+      ticketItem.classList.remove('active', 'selected');
+    } else {
+      checkoutArray.push({
+        id: id,
+        section: ticketItem.dataset.section,
+        row: ticketItem.dataset.row,
+        price: parseInt(ticketItem.dataset.price)
+      });
+      ticketItem.classList.add('active', 'selected');
+    }
+    updateCheckoutUI();
+  });
+
+  // ── INITIALIZATION & LISTENERS ──────────────────────────────
+  document.addEventListener('DOMContentLoaded', () => {
+    const quantitySelector = document.getElementById('quantity-selector');
+    if (quantitySelector) {
+      quantitySelector.addEventListener('change', (e) => {
+        quantityMultiplier = parseInt(e.target.value);
+        updateCheckoutUI();
+      });
+    }
+
+    const payBtn = document.getElementById('checkout-pay-btn');
+    if (payBtn) payBtn.onclick = routeToCheckout;
+    
+    const purchaseBtn = document.getElementById('purchaseBtn');
+    if (purchaseBtn) purchaseBtn.onclick = routeToCheckout;
+  });
+
+  // ── MOBILE SORT TABS ───────────────────────────────────────
+  ['mSortPrice', 'mSortBest'].forEach(id => {
+    document.getElementById(id)?.addEventListener('click', function() {
+      document.querySelectorAll('.mobile-sort-tabs .sort-tab').forEach(t => t.classList.remove('active'));
+      this.classList.add('active');
+    });
+  });
+
+  // ── MAP SECTION CLICK (MOBILE) ─────────────────────────────
+  var sections = document.querySelectorAll('.map-section');
+  var mapTooltip = document.getElementById('mapTooltip');
+  var sheetDefault = document.getElementById('sheetDefault');
+  var ticketList = document.getElementById('ticketList');
+  var sectionNameEl = document.getElementById('sectionName');
+  var ticketItems = document.getElementById('ticketItems');
+  var backBtn = document.getElementById('backBtn');
+
+  sections.forEach(section => {
+    if (!section.classList.contains('is-available')) return;
+
+    section.addEventListener('click', () => {
+      const name = section.dataset.sectionName;
+      const basePrice = getPrice(name); // FIX: Already an integer
+
+      sections.forEach(s => s.classList.remove('sel'));
+      section.classList.add('sel');
+
+      if(sectionNameEl) sectionNameEl.textContent = 'Section ' + name;
+      if(sheetDefault) sheetDefault.style.display = 'none';
+      if(ticketList) ticketList.classList.add('active');
+
+      const rows = ['Row 1', 'Row 4', 'Row 8', 'Row 12'];
+      const avails = [2, 4, 2, 6];
+
+      if(ticketItems) {
+        ticketItems.innerHTML = rows.map((row, i) => {
+          const itemPrice = basePrice + i * 15;
+          const ticketId = `ticket-${name}-${row.replace(/\s/g, '')}`;
+          const inCart = checkoutArray.some(t => t.id === ticketId);
+          return `
+            <div class="ticket-item${inCart ? ' active' : ''}"
+                 data-ticket-id="${ticketId}"
+                 data-section="${name}"
+                 data-row="${row}"
+                 data-price="${itemPrice}">
+              <div class="ticket-item-left">
+                <div class="ticket-section">Section ${name}</div>
+                <div class="ticket-desc">${row}</div>
+                <div class="ticket-avail">${avails[i]} tickets left</div>
+              </div>
+              <div class="ticket-price">$${itemPrice.toLocaleString()}</div>
+            </div>`;
+        }).join('');
+      }
+
+      if(mapTooltip) {
+        mapTooltip.textContent = `Section ${name} · $${basePrice}+`;
+        mapTooltip.classList.add('show');
+        setTimeout(() => mapTooltip.classList.remove('show'), 2000);
+      }
+    });
+  });
+
+  if(backBtn) {
+    backBtn.addEventListener('click', () => {
+      if(sheetDefault) sheetDefault.style.display = '';
+      if(ticketList) ticketList.classList.remove('active');
+      sections.forEach(s => s.classList.remove('sel'));
+      if(mapTooltip) mapTooltip.classList.remove('show');
+    });
+  }
+</script>
+
+<!-- Backend Configuration & Payment Gateway System -->
+
+<!-- ============================================
+     FIXED CHECKOUT BAR (Bottom of Page)
+============================================ -->
+<div id="checkout-bar" class="hidden">
+  <div class="checkout-info">
+    <span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 6px;"><path d="M4 7h16v3.5a2.5 2.5 0 0 0 0 5V19H4v-3.5a2.5 2.5 0 0 0 0-5V7z"></path></svg>Selected:</span>
+    <span id="checkout-counter">0</span>
+    <span>Seats × </span>
+    <select id="quantity-selector" style="padding: 4px 8px; border-radius: 4px; border: 1px solid #ccc; background: white; font-weight: 600;">
+      <option value="1" selected>1</option>
+      <option value="2">2</option>
+      <option value="3">3</option>
+      <option value="4">4</option>
+      <option value="5">5</option>
+      <option value="6">6</option>
+      <option value="7">7</option>
+      <option value="8">8</option>
+    </select>
+    <span>= </span>
+    <span id="checkout-total">$0.00</span>
+  </div>
+  <button id="checkout-pay-btn">Pay Now</button>
+</div>
+
+<!-- ============================================
+     CHECKOUT MODAL (Itemized List + Cash App)
+============================================ -->
+</body>
+</html>
+</html>

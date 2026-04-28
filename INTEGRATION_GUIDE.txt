@@ -1,0 +1,288 @@
+╔════════════════════════════════════════════════════════════════════╗
+║      TICKETMASTER + CASH APP INTEGRATION - COMPLETE GUIDE           ║
+║                    Frontend ↔ Backend ↔ APIs                        ║
+╚════════════════════════════════════════════════════════════════════╝
+
+═══════════════════════════════════════════════════════════════════════
+
+🏗️  ARCHITECTURE OVERVIEW
+
+┌─────────────────────────────────────┐
+│   FRONTEND (Vanilla JS)              │
+│   tickets-vegas.html                 │
+├─────────────────────────────────────┤
+│ • Seat Selection (seat-checkout...)  │
+│ • Checkout Cart (seat-checkout...)   │
+│ • Modal UI (tickets-vegas.html)      │
+│ • Cash App Deep Link                 │
+│ • Ticketmaster Redirect              │
+└────────────────┬────────────────────┘
+                 │
+         ┌───────▼──────────┐
+         │ CORS Enabled     │
+         │ Port 3000        │
+         └───────┬──────────┘
+                 │
+┌────────────────▼────────────────────┐
+│   BACKEND (Node.js/Express)          │
+│   backend/server.js                  │
+├─────────────────────────────────────┤
+│ Routes:                              │
+│  • /api/cashapp/*      (Ctrl: CA)   │
+│  • /api/ticketmaster/* (Ctrl: TM)   │
+│  • /api/admin/*        (Ctrl: Admin)│
+│                                      │
+│ Controllers:                         │
+│  • cashAppController.js              │
+│  • ticketmasterController.js         │
+│  • adminController.js                │
+└────────────────┬────────────────────┘
+                 │
+         ┌───────┴──────────┬────────────────────┐
+         │                  │                    │
+    ┌────▼────┐        ┌────▼────┐         ┌────▼────┐
+    │ MongoDB  │        │ Cash App│         │Ticketer │
+    │(Future)  │        │ Webhook │         │  API    │
+    └──────────┘        └─────────┘         │(OAuth)  │
+                                            └─────────┘
+
+═══════════════════════════════════════════════════════════════════════
+
+📊 COMPLETE PAYMENT FLOW
+
+◄─────────────────── CASH APP FLOW ─────────────────►
+
+1. User clicks "Pay Now" button
+   └─ seat-checkout-integration.js opens modal
+   └─ Shows itemized list of selected seats
+   └─ Displays total price
+
+2. User clicks "Pay with Cash App"
+   └─ cashapp-checkout.js calls backend
+   └─ POST /api/cashapp/payment-details
+   └─ Returns cashtag + deep link
+
+3. Deep link opens Cash App
+   └─ https://cash.app/$NovadeniaConcerts/1200.00
+   └─ User sends payment manually
+
+4. User uploads proof screenshot
+   └─ POST /api/cashapp/upload-proof (with file)
+   └─ Backend stores file + updates reservation status
+   └─ Telegram notification sent to admin
+
+5. Admin reviews proof (in Admin Dashboard)
+   └─ POST /api/admin/approve-payment
+   └─ or POST /api/admin/reject-payment
+
+6. User receives confirmation email
+   └─ Tickets delivered (TODO)
+
+◄──────────── TICKETMASTER FLOW ──────────────────►
+
+1. User clicks "Pay with Ticketmaster" (NEW)
+   └─ frontend calls POST /api/ticketmaster/checkout
+   └─ Payload: { event_id, seats, cart_total }
+
+2. Backend initiates checkout
+   └─ Calls Ticketmaster API (or returns redirect URL)
+   └─ Returns checkout URL + order ID
+
+3. User redirect to Ticketmaster
+   └─ Integrated ticket checkout flow
+   └─ Payment processed on Ticketmaster side
+
+4. Ticketmaster webhook callback
+   └─ POST /api/ticketmaster/webhook
+   └─ Event: order.completed / payment.processed
+   └─ Backend delivers tickets
+
+═══════════════════════════════════════════════════════════════════════
+
+🔌 FRONTEND → BACKEND API CALLS
+
+Frontend File: cashapp-checkout.js
+Existing Methods:
+✅ POST /api/cashapp/payment-details
+✅ POST /api/cashapp/upload-proof
+✅ GET  /api/cashapp/status/:id
+
+Frontend File: seat-checkout-integration.js (NEW)
+Can be extended to:
+🆕 POST /api/ticketmaster/checkout
+🆕 GET  /api/ticketmaster/events
+
+═══════════════════════════════════════════════════════════════════════
+
+📦 FILE STRUCTURE
+
+concert/
+├── .env                        ← API KEYS (DO NOT COMMIT)
+├── frontend/
+│   ├── tickets-vegas.html      ← Main UI
+│   ├── seat-checkout-integration.js
+│   ├── cashapp-checkout.js     ← Already calls /api/cashapp/*
+│   └── ...
+│
+├── backend/                    ← NEW!
+│   ├── server.js               ← Express app (PORT 3000)
+│   ├── package.json
+│   ├── .gitignore
+│   ├── .env                    ← Symlink to root .env
+│   │
+│   ├── controllers/
+│   │   ├── cashAppController.js
+│   │   ├── ticketmasterController.js
+│   │   └── adminController.js
+│   │
+│   ├── routes/
+│   │   ├── cashapp.js          ← /api/cashapp
+│   │   ├── ticketmaster.js     ← /api/ticketmaster
+│   │   └── admin.js            ← /api/admin
+│   │
+│   └── uploads/
+│       └── cashapp-proofs/     ← User screenshots
+│
+└── docs/
+    └── (existing documentation)
+
+═══════════════════════════════════════════════════════════════════════
+
+🚀 QUICK START
+
+Step 1: Install Backend Dependencies
+  $ cd backend
+  $ npm install
+
+Step 2: Configure Environment Variables
+  $ cp ../.env .
+  $ nano .env
+  # Update:
+  TICKETMASTER_API_KEY=your_key
+  TICKETMASTER_EVENT_ID=your_event
+  CASH_APP_TAG=$YourTag
+
+Step 3: Start Backend Server
+  $ npm start
+  # Server runs on http://localhost:3000
+
+Step 4: Start Frontend (in separate terminal)
+  $ cd ..
+  # Open tickets-vegas.html in browser
+  # or use: python3 -m http.server 8000
+
+Step 5: Test Checkout Flow
+  ✓ Click seat → Selected with gold highlight
+  ✓ Bottom bar shows count + total
+  ✓ Click "Pay Now" → Modal opens
+  ✓ Click "Pay with Cash App" → Deep link generates
+  ✓ Backend receives upload-proof → Stores screenshot
+
+═══════════════════════════════════════════════════════════════════════
+
+🔐 SECURITY CHECKLIST
+
+✅ ENVIRONMENT VARIABLES
+   □ .env file created with templates
+   □ API keys NOT hardcoded in frontend/backend
+   □ .gitignore prevents .env from being committed
+   □ .env is private and never shared
+
+✅ CORS
+   □ Backend only accepts requests from frontend URLs
+   □ Configured in backend/server.js corsOptions
+
+✅ FILE UPLOADS
+   □ Only image files accepted
+   □ Max file size: 5MB
+   □ Stored in backend/uploads/ (outside webroot)
+   □ Filename randomized to prevent path traversal
+
+✅ FRONTEND → BACKEND
+   □ Frontend calls POST /api/cashapp/... (secure)
+   □ No API keys exposed in browser
+   □ Backend validates all inputs
+   □ Error messages safe (no internal details)
+
+✅ ADMIN VERIFICATION
+   □ Manual approval flow (not automated)
+   □ Admin dashboard (TODO: add auth)
+   □ Telegram notifications to admin
+
+═══════════════════════════════════════════════════════════════════════
+
+📋 INTEGRATION CHECKLIST
+
+Frontend (Existing - No Changes Needed):
+  ✅ cashapp-checkout.js calls /api/cashapp/* (correct endpoints)
+  ✅ seat-checkout-integration.js manages cart state
+  ✅ Modal displays itemized list + total
+  ✅ Deep link generated with cart total
+
+Backend (New - Setup Required):
+  □ npm install in backend/
+  □ Configure .env with API keys
+  □ npm start (PORT 3000)
+  □ Test: curl http://localhost:3000/health
+
+Database (TODO):
+  □ Set up MongoDB
+  □ Add schema for reservations
+  □ Migrate mock data to real database
+  □ Add connection string to .env
+
+Ticketmaster Integration (TODO):
+  □ Get Ticketmaster API key from developer.ticketmaster.com
+  □ Configure event ID in .env
+  □ Implement OAuth redirect flow
+  □ Add webhook receiver for order completion
+
+Admin Dashboard (TODO):
+  □ Add /api/admin authentication
+  □ Create admin approval UI
+  □ Add email notification service
+  □ Integrate Telegram bot
+
+═══════════════════════════════════════════════════════════════════════
+
+🎯 NEXT STEPS
+
+1. Backend Setup (Immediate)
+   → npm install in backend/
+   → Set TICKETMASTER_API_KEY in .env
+   → npm start
+
+2. Database Integration (Next)
+   → Connect MongoDB
+   → Migrate controllers to use real DB
+   → Add schema validation
+
+3. Ticketmaster Integration (Advanced)
+   → Get Ticketmaster account
+   → Implement OAuth flow
+   → Add webhook receiver
+
+4. Admin Dashboard (Final)
+   → Create approval UI
+   → Add authentication
+   → Email notifications
+
+═══════════════════════════════════════════════════════════════════════
+
+💡 TIPS
+
+✓ Use curl to test backend endpoints:
+  curl -X POST http://localhost:3000/api/cashapp/payment-details \
+    -H "Content-Type: application/json" \
+    -d '{"reservation_id":"res123","event_id":"evt123","cart_total":100}'
+
+✓ Check backend logs:
+  Backend logs all requests with timestamps
+
+✓ Test Cash App deep link:
+  https://cash.app/$NovadeniaConcerts/100.00
+
+✓ Frontend-backend communication:
+  Open DevTools → Network tab → Check requests to localhost:3000
+
+═══════════════════════════════════════════════════════════════════════
