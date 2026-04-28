@@ -15,7 +15,7 @@
 document.addEventListener('DOMContentLoaded', () => {
   // Initialize the Cash App checkout modal
   window.cashappCheckout = new CashAppCheckout({
-    backendUrl: 'http://localhost:3000', // or your production URL
+    backendUrl: '', // Uses relative paths for both dev and production
     timeoutSeconds: 600, // 10 minutes
   });
 
@@ -423,7 +423,7 @@ function testCashAppIntegration() {
   }
 
   // Test: Backend connectivity
-  fetch('http://localhost:3000/api/health')
+  fetch('/api/health')
     .then(r => r.json())
     .then(d => {
       if (d.status === 'ok') {

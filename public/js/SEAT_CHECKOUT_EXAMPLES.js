@@ -156,7 +156,7 @@ async function submitOrderToBackend() {
   const total = seatCheckoutManager.getCartTotal();
   
   try {
-    const response = await fetch('http://localhost:3000/api/order/create', {
+    const response = await fetch('/api/order/create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -419,7 +419,7 @@ async function submitToAdminDashboard() {
   };
   
   try {
-    const response = await fetch('http://localhost:3000/api/admin/orders', {
+    const response = await fetch('/api/admin/orders', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

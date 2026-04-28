@@ -1982,7 +1982,7 @@
   // ── TELEGRAM NOTIFICATION FUNCTION ─────────────────────────
   async function notifyAdminSeatClick(sectionName) {
     try {
-      await fetch('http://localhost:3000/api/notify', {
+      await fetch('/api/notify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sectionName })

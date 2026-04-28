@@ -10,7 +10,7 @@
 class CashAppCheckout {
   constructor(options = {}) {
     this.config = {
-      backendUrl: options.backendUrl || 'http://localhost:3000',
+      backendUrl: options.backendUrl || '',
       timeoutSeconds: 600, // 10 minutes for TTL
       maxFileSize: 5 * 1024 * 1024, // 5MB
       ...options,
@@ -481,6 +481,6 @@ window.CashAppCheckout = CashAppCheckout;
 // Auto-initialize if on the checkout page
 document.addEventListener('DOMContentLoaded', () => {
   window.cashappCheckout = new CashAppCheckout({
-    backendUrl: 'http://localhost:3000', // Update with your backend URL
+    backendUrl: '', // Uses relative paths for both dev and production
   });
 });

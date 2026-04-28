@@ -6,7 +6,7 @@
 class AdminDashboard {
   constructor(options = {}) {
     this.config = {
-      backendUrl: options.backendUrl || 'http://localhost:3000',
+      backendUrl: options.backendUrl || '',
       autoRefreshInterval: 30000, // 30 seconds
       ...options,
     };
@@ -343,7 +343,7 @@ class AdminDashboard {
 // Initialize dashboard on page load
 document.addEventListener('DOMContentLoaded', () => {
   window.adminDashboard = new AdminDashboard({
-    backendUrl: 'http://localhost:3000', // Update with your backend URL
+      backendUrl: '', // Uses relative paths for both dev and production
   });
 });
 
