@@ -58,6 +58,9 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 // Static files for uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Serve frontend static files from public directory
+app.use(express.static(path.join(__dirname, '../public')));
+
 // Request logging middleware
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
